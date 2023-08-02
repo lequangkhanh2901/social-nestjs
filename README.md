@@ -30,3 +30,28 @@ $ npm run start:prod
 1. Prettier
 2. Husky
 3. Eslint
+
+### Feature
+
+#### TypeORM
+
+1.  Create new **migration** :
+
+```bash
+$ migration=\<migrationName\> npm run migration:create
+
+```
+
+2. Generate **migration**:
+
+```bash
+$ migration=\<migrationName\> npm run migration:generate
+
+```
+
+3. Migration to DB :
+
+```bash
+$ npm run migration:run
+
+```
