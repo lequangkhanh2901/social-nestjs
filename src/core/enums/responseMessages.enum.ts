@@ -1,0 +1,6 @@
+export enum ResponseMessage {
+  BANNED_ACCOUT = 'BANNED_ACCOUT',
+  MAIL_WAS_SENT = 'MAIL_WAS_SENT',
+  VERIFIED = 'VERIFIED',
+  INVALID_TOKEN = 'INVALID_TOKEN',
+}
