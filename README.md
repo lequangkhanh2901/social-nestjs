@@ -38,14 +38,14 @@ $ npm run start:prod
 1.  Create new **migration** :
 
 ```bash
-$ migration=\<migrationName\> npm run migration:create
+$ migration=<migrationName> npm run migration:create
 
 ```
 
 2. Generate **migration**:
 
 ```bash
-$ migration=\<migrationName\> npm run migration:generate
+$ migration=<migrationName> npm run migration:generate
 
 ```
 
