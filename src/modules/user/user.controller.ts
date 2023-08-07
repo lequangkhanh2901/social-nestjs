@@ -16,7 +16,6 @@ export class UserController {
     return this.userService.addUser(createUser)
   }
 
-  // @UseInterceptors(ClassSerializerInterceptor)
   @Get()
   getMe(@Headers() headers) {
     return this.userService.getMe(headers.authorization)
