@@ -58,4 +58,13 @@ export class AuthController {
   refreshToken(@Headers('authorization') authorization: string) {
     return this.authService.refresh(authorization)
   }
+
+  // @UseInterceptors(FileInterceptor('file'))
+  // @Post('upload')
+  // @ApiConsumes('multipart/form-data')
+  // uploadFile(@Body() body: FileDto, @UploadedFile() file: Express.Multer.File) {
+  //   console.log('body: ', body)
+
+  //   return 'uploaded'
+  // }
 }
