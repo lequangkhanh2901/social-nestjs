@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsEmail, IsString, Length } from 'class-validator'
+import { Allow, IsEmail, IsNotEmpty, IsString, Length } from 'class-validator'
 
 export class SignupAuthDto {
   @ApiProperty({
@@ -35,4 +35,25 @@ export class LoginAuthDto {
   @IsString()
   @Length(6, 30)
   password: string
+}
+
+export class SampleDto {
+  @ApiProperty()
+  @IsEmail()
+  name: string
+}
+
+export class FileDto {
+  @ApiProperty()
+  @Allow()
+  @IsNotEmpty()
+  name: string
+
+  @ApiProperty()
+  @Allow()
+  @IsEmail()
+  email: string
+
+  @ApiProperty({ type: 'string', format: 'binary' })
+  file: any
 }

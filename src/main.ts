@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 
 import { AppModule } from './app.module'
+import { ConfigService } from '@nestjs/config'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -10,8 +11,13 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   )
+  const configService = app.get(ConfigService)
 
   const config = new DocumentBuilder()
     .setTitle('Social')
@@ -23,6 +29,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config, {})
   SwaggerModule.setup('docs', app, document)
 
-  await app.listen(4000)
+  await app.listen(configService.get('PORT'), () => {
+    // eslint-disable-next-line
+    console.log(`started at: http://localhost:${configService.get('PORT')}`)
+  })
 }
 bootstrap()

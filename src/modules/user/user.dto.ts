@@ -1,3 +1,6 @@
+import { Exclude } from 'class-transformer'
+import { UserRoles, UserStatus } from 'src/core/enums/user'
+
 export class CreateUserDto {
   email: string
   password: string
@@ -32,4 +35,27 @@ export class CreateUserDto {
   // @IsString()
   // @Length(4, 50)
   // username: string
+}
+
+export class ResponseUser {
+  @Exclude()
+  id: string
+
+  name: string
+  username: string
+  email: string
+
+  @Exclude()
+  password: string
+
+  actived: boolean
+  status: UserStatus
+  role: UserRoles
+  avatar: string
+  createdAt: Date
+  updatedAt: Date
+
+  constructor(partial: Partial<ResponseUser>) {
+    Object.assign(this, partial)
+  }
 }

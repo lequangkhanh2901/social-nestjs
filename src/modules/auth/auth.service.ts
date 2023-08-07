@@ -31,7 +31,7 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException()
     }
-    const isMatch = compare(data.password, user.password)
+    const isMatch = await compare(data.password, user.password)
     if (!isMatch) {
       throw new NotFoundException()
     }
