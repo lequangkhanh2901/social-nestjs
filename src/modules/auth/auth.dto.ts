@@ -57,3 +57,9 @@ export class FileDto {
   @ApiProperty({ type: 'string', format: 'binary' })
   file: any
 }
+
+export class ForgotPasswordDto {
+  @ApiProperty()
+  @IsEmail()
+  email: string
+}
