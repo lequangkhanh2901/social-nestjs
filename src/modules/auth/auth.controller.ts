@@ -13,7 +13,7 @@ import { ApiBearerAuth, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 
 import { VerifyAction } from 'src/core/enums/auth'
 import { RefreshAuthGuard } from 'src/core/guards/refreshAuth.guard'
-import { LoginAuthDto, SignupAuthDto } from './auth.dto'
+import { ForgotPasswordDto, LoginAuthDto, SignupAuthDto } from './auth.dto'
 import { AuthService } from './auth.service'
 
 @ApiTags('auth')
@@ -57,6 +57,12 @@ export class AuthController {
   @Post('refresh-token')
   refreshToken(@Headers('authorization') authorization: string) {
     return this.authService.refresh(authorization)
+  }
+
+  @HttpCode(200)
+  @Post('forgot-password')
+  forgotPassword(@Body() { email }: ForgotPasswordDto) {
+    return this.authService.forgotPassword(email)
   }
 
   // @UseInterceptors(FileInterceptor('file'))

@@ -17,6 +17,7 @@ import { MailService } from 'src/modules/mail/mail.service'
 import { LoginAuthDto, SignupAuthDto } from './auth.dto'
 import { UserStatus } from 'src/core/enums/user'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
+import generateKey from 'src/core/helper/generateKey'
 
 @Injectable()
 export class AuthService {
@@ -49,9 +50,20 @@ export class AuthService {
   }
 
   async signup(data: SignupAuthDto) {
-    const token = await this.jwtService.signAsync(data, {
-      expiresIn: '1h',
-    })
+    const user = await this.userService.getByEmail(data.email)
+    if (user)
+      throw new HttpException(
+        ResponseMessage.EXISTED_EMAIL,
+        HttpStatus.BAD_REQUEST,
+      )
+
+    const token = await this.jwtService.signAsync(
+      { ...data, type: VerifyAction.SIGNUP },
+      {
+        expiresIn: '1h',
+      },
+    )
+
     await this.mailService.sendConfirm(data.email, encodeURIComponent(token))
     return {
       message: ResponseMessage.MAIL_WAS_SENT,
@@ -62,6 +74,11 @@ export class AuthService {
     if (action === VerifyAction.SIGNUP) {
       try {
         const data = await this.jwtService.verifyAsync(token)
+        if (data.type !== VerifyAction.SIGNUP)
+          throw new HttpException(
+            ResponseMessage.INVALID_ACTION,
+            HttpStatus.BAD_REQUEST,
+          )
         const user = await this.userService.getByEmail(data.email)
         if (user)
           throw new HttpException(
@@ -78,11 +95,54 @@ export class AuthService {
             ResponseMessage.INVALID_TOKEN,
             HttpStatus.NOT_ACCEPTABLE,
           )
-        if (error.message === ResponseMessage.VERIFIED) throw error
+        if (
+          error.message === ResponseMessage.VERIFIED ||
+          error.message === ResponseMessage.INVALID_ACTION
+        )
+          throw error
         throw new InternalServerErrorException()
       }
+    } else if (action === VerifyAction.FORGOT_PASSWORD) {
+      try {
+        const data = await this.jwtService.verifyAsync(token)
+        if (data.type !== VerifyAction.FORGOT_PASSWORD)
+          throw new HttpException(
+            ResponseMessage.INVALID_ACTION,
+            HttpStatus.BAD_REQUEST,
+          )
+
+        const user = await this.userService.getByEmail(data.email)
+        if (!user)
+          throw new HttpException(
+            ResponseMessage.EMAIL_NOT_EXIST,
+            HttpStatus.NOT_FOUND,
+          )
+
+        if (user.status === UserStatus.BANNED)
+          throw new HttpException(
+            ResponseMessage.BANNED_ACCOUT,
+            HttpStatus.BAD_REQUEST,
+          )
+
+        const key = generateKey(10)
+        await this.userService.updatePassword(user, key)
+        return {
+          key: key,
+        }
+      } catch (error) {
+        if (error.name === 'JsonWebTokenError')
+          throw new HttpException(
+            ResponseMessage.INVALID_TOKEN,
+            HttpStatus.NOT_ACCEPTABLE,
+          )
+
+        throw error
+      }
     } else {
-      return 'comming...'
+      throw new HttpException(
+        ResponseMessage.INVALID_ACTION,
+        HttpStatus.BAD_REQUEST,
+      )
     }
   }
 
@@ -116,5 +176,20 @@ export class AuthService {
       { id, role, type: AuthTokenType.ACCESS },
       { expiresIn: process.env.ACCESS_EXPIRE },
     )
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.userService.getByEmail(email)
+    if (!user) throw new NotFoundException()
+    const token = await this.jwtService.signAsync(
+      { email, type: VerifyAction.FORGOT_PASSWORD },
+      {
+        expiresIn: process.env.EMAIL_TOKEN_EXPIRE,
+      },
+    )
+    await this.mailService.sendConfirm(email, token, 'forgot_password')
+    return {
+      message: ResponseMessage.MAIL_WAS_SENT,
+    }
   }
 }

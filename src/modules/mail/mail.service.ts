@@ -5,11 +5,19 @@ import { Injectable } from '@nestjs/common'
 export class MailService {
   constructor(private readonly mailerService: MailerService) {}
 
-  async sendConfirm(email: string, token: string) {
+  async sendConfirm(
+    email: string,
+    token: string,
+    type: 'signup' | 'forgot_password' = 'signup',
+  ) {
+    const subject =
+      type === 'forgot_password' ? 'Forgot password' : 'Confirm signup!'
+    const template =
+      type === 'forgot_password' ? './forgotpassword' : './signup'
     return await this.mailerService.sendMail({
       to: email,
-      subject: 'Confirm signup!',
-      template: './confirmation',
+      subject,
+      template,
       context: {
         token,
       },

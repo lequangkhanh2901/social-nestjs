@@ -4,10 +4,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { JwtService } from '@nestjs/jwt'
 import { Repository } from 'typeorm'
+import { hashSync } from 'bcrypt'
+
 import { User } from './user.entity'
 import { CreateUserDto, ResponseUser } from './user.dto'
-import { JwtService } from '@nestjs/jwt'
+import { saltRound } from 'src/core/constants'
 
 @Injectable()
 export class UserService {
@@ -45,5 +48,10 @@ export class UserService {
       if (error.status === 404) throw error
       throw new UnauthorizedException()
     }
+  }
+
+  async updatePassword(user: User, password: string) {
+    user.password = hashSync(password, saltRound)
+    return this.userRepository.save(user)
   }
 }
