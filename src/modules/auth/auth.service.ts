@@ -49,9 +49,20 @@ export class AuthService {
   }
 
   async signup(data: SignupAuthDto) {
-    const token = await this.jwtService.signAsync(data, {
-      expiresIn: '1h',
-    })
+    const user = await this.userService.getByEmail(data.email)
+    if (user)
+      throw new HttpException(
+        ResponseMessage.EXISTED_EMAIL,
+        HttpStatus.BAD_REQUEST,
+      )
+
+    const token = await this.jwtService.signAsync(
+      { ...data },
+      {
+        expiresIn: '1h',
+      },
+    )
+
     await this.mailService.sendConfirm(data.email, encodeURIComponent(token))
     return {
       message: ResponseMessage.MAIL_WAS_SENT,
