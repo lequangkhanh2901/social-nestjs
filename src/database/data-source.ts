@@ -1,6 +1,13 @@
 import { DataSource, DataSourceOptions } from 'typeorm'
 import { config } from 'dotenv'
 import { User } from 'src/modules/user/user.entity'
+import Media from 'src/modules/media/media.entity'
+import Album from 'src/modules/album/album.entity'
+import Post from 'src/modules/post/post.entity'
+import Comment from 'src/modules/comment/comment.entity'
+import Like from 'src/modules/like/like.entity'
+import Friend from 'src/modules/friend/friend.entity'
+import RequestFriend from 'src/modules/request-friend/request-friend.entity'
 
 config()
 
@@ -11,7 +18,7 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [User],
+  entities: [User, RequestFriend, Media, Album, Post, Comment, Like, Friend],
   migrations: ['dist/database/migrations/*.js'],
 }
 

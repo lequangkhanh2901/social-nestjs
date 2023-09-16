@@ -4,9 +4,15 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm'
+import RequestFriend from '../request-friend/request-friend.entity'
+import Media from '../media/media.entity'
+import Album from '../album/album.entity'
+import Post from '../post/post.entity'
+import Comment from '../comment/comment.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -34,14 +40,36 @@ export class User {
   })
   actived: boolean
 
-  @Column({ default: UserStatus.ACTIVE })
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
   status: UserStatus
 
-  @Column({ default: UserRoles.NORMAL })
+  @Column({ type: 'enum', enum: UserRoles, default: UserRoles.NORMAL })
   role: UserRoles
 
   @Column({ default: '' })
   avatar: string
+
+  // @ManyToMany(() => User)
+  // @JoinTable()
+  // friends: User[]
+
+  @OneToMany(() => RequestFriend, (request) => request.user)
+  request_friend: RequestFriend[]
+
+  @OneToMany(() => RequestFriend, (request) => request.user_target)
+  request_friend_receive: RequestFriend[]
+
+  @OneToMany(() => Media, (media) => media.id)
+  medias: Media[]
+
+  @OneToMany(() => Album, (album) => album.user)
+  albums: Album[]
+
+  @OneToMany(() => Post, (post) => post.user)
+  posts: Post[]
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments: Comment[]
 
   @CreateDateColumn()
   createdAt: Date

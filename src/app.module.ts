@@ -10,6 +10,13 @@ import { AuthModule } from './modules/auth/auth.module'
 import { UserModule } from './modules/user/user.module'
 import { dataSourceOptions } from './database/data-source'
 import { MailModule } from './modules/mail/mail.module'
+import { MediaModule } from './modules/media/media.module'
+import { AlbumModule } from './modules/album/album.module'
+import { PostModule } from './modules/post/post.module'
+import { CommentModule } from './modules/comment/comment.module'
+import { LikeModule } from './modules/like/like.module'
+import { FriendModule } from './modules/friend/friend.module'
+import { RequestFriendModule } from './modules/request-friend/request-friend.module'
 
 @Module({
   imports: [
@@ -25,6 +32,13 @@ import { MailModule } from './modules/mail/mail.module'
     AuthModule,
     UserModule,
     MailModule,
+    MediaModule,
+    AlbumModule,
+    PostModule,
+    CommentModule,
+    LikeModule,
+    FriendModule,
+    RequestFriendModule,
   ],
   controllers: [AppController],
   providers: [

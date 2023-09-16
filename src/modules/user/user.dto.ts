@@ -1,4 +1,7 @@
-import { Exclude } from 'class-transformer'
+import { ApiProperty } from '@nestjs/swagger'
+import { Exclude, Transform } from 'class-transformer'
+import { IsString, Length } from 'class-validator'
+import { NotMatch } from 'src/core/decorators/validation/not-match.decorator'
 import { UserRoles, UserStatus } from 'src/core/enums/user'
 
 export class CreateUserDto {
@@ -38,7 +41,7 @@ export class CreateUserDto {
 }
 
 export class ResponseUser {
-  @Exclude()
+  // @Exclude()
   id: string
 
   name: string
@@ -58,4 +61,25 @@ export class ResponseUser {
   constructor(partial: Partial<ResponseUser>) {
     Object.assign(this, partial)
   }
+}
+
+export class UpdatePasswordDto {
+  @ApiProperty({
+    minLength: 6,
+    maxLength: 30,
+  })
+  @Length(6, 30)
+  @Transform(({ value }) => value?.trim())
+  @IsString()
+  oldPass: string
+
+  @ApiProperty({
+    minLength: 6,
+    maxLength: 30,
+  })
+  @Length(6, 30)
+  @Transform(({ value }) => value?.trim())
+  @IsString()
+  @NotMatch('oldPass')
+  newPass: string
 }
