@@ -1,21 +1,38 @@
 import {
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
-import { Repository } from 'typeorm'
-import { hashSync } from 'bcrypt'
+import { In, Repository } from 'typeorm'
+import { compare, hashSync } from 'bcrypt'
 
 import { User } from './user.entity'
-import { CreateUserDto, ResponseUser } from './user.dto'
+import {
+  CreateUserDto,
+  ResponseUser,
+  UpdatePasswordDto,
+  UpdateUserDto,
+} from './user.dto'
 import { saltRound } from 'src/core/constants'
+import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
+import RequestFriend from '../request-friend/request-friend.entity'
+import { getBearerToken } from 'src/core/helper/getToken'
+import { AccessData } from 'src/core/types/common'
+import Media from '../media/media.entity'
+import { MediaType } from 'src/core/enums/media'
+import Album from '../album/album.entity'
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(RequestFriend)
+    private readonly requestFriendRepository: Repository<RequestFriend>,
+
     private readonly jwtService: JwtService,
   ) {}
 
@@ -33,7 +50,14 @@ export class UserService {
   }
 
   async getById(id: string) {
-    const user = await this.userRepository.findOneBy({ id })
+    const user = await this.userRepository.findOne({
+      where: {
+        id,
+      },
+      relations: {
+        avatarId: true,
+      },
+    })
     return user
   }
 
@@ -41,7 +65,17 @@ export class UserService {
     const token = authorization.replace('Bearer ', '')
     try {
       const data = await this.jwtService.verifyAsync(token)
-      const user = await this.userRepository.findOneBy({ id: data.id })
+      const user = await this.userRepository.findOne({
+        where: {
+          id: data.id,
+        },
+        relations: {
+          request_friend: {},
+          avatarId: true,
+          // friends: true,
+        },
+      }) //findOneBy({ id: data.id })
+
       if (!user) throw new NotFoundException()
       return new ResponseUser(user)
     } catch (error) {
@@ -53,5 +87,83 @@ export class UserService {
   async updatePassword(user: User, password: string) {
     user.password = hashSync(password, saltRound)
     return this.userRepository.save(user)
+  }
+
+  async handleUpdatePassword(authorization: string, data: UpdatePasswordDto) {
+    const tokenData = await this.jwtService.verifyAsync(
+      authorization.replace('Bearer ', ''),
+    )
+    const user = await this.userRepository.findOneBy({ id: tokenData.id })
+    if (!user) throw new NotFoundException()
+
+    const check = await compare(data.oldPass, user.password)
+    if (!check)
+      throw new HttpException(
+        ResponseMessage.OLD_PASS_NOT_MATCH,
+        HttpStatus.BAD_REQUEST,
+      )
+
+    // const password = hashSync(data.newPass, saltRound)
+    await this.updatePassword(user, data.newPass)
+
+    return {
+      message: ResponseMessage.UPDATED,
+    }
+  }
+
+  async getUsers(uids: string[]) {
+    return await this.userRepository.findBy({
+      id: In(uids),
+    })
+  }
+
+  async updateUser(authorization: string, data: UpdateUserDto) {
+    const tokenData: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+
+    await this.userRepository.update(
+      {
+        id: tokenData.id,
+      },
+      {
+        ...data,
+      },
+    )
+
+    return data
+  }
+
+  async uploadAvatar(authorization: string, avatar: Express.Multer.File) {
+    const { id }: AccessData = await this.jwtService.verify(
+      getBearerToken(authorization),
+    )
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: {
+        avatarId: true,
+        albums: true,
+      },
+    })
+
+    const media = new Media()
+    const album = new Album()
+    album.type = 'DEFAULT'
+    album.name = 'AVATAR'
+    album.medias = [media]
+    user.albums = [...user.albums, album]
+
+    media.cdn = avatar.path.replace('public', '')
+    media.type = MediaType.IMAGE
+
+    media.user = user
+    user.avatarId = media
+    user.actived = true
+    await this.userRepository.save(user)
+    // }
+
+    return {
+      avatar: user.avatarId.cdn,
+    }
   }
 }

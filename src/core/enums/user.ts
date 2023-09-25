@@ -9,3 +9,9 @@ export enum UserRoles {
   MANAGER = 'MANAGER',
   NORMAL = 'NORMAL',
 }
+
+export enum UserSex {
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  OTHER = 'OTHER',
+}

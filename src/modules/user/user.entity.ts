@@ -1,12 +1,20 @@
-import { UserRoles, UserStatus } from 'src/core/enums/user'
+import { UserRoles, UserSex, UserStatus } from 'src/core/enums/user'
 import {
   Column,
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm'
+import RequestFriend from '../request-friend/request-friend.entity'
+import Media from '../media/media.entity'
+import Album from '../album/album.entity'
+import Post from '../post/post.entity'
+import Comment from '../comment/comment.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -17,8 +25,7 @@ export class User {
   @Index()
   name: string
 
-  @Column({ length: 50, default: '' })
-  @Index()
+  @Column({ length: 50, default: '', unique: true })
   username: string
 
   @Column({ length: 100, unique: true })
@@ -34,14 +41,51 @@ export class User {
   })
   actived: boolean
 
-  @Column({ default: UserStatus.ACTIVE })
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
   status: UserStatus
 
-  @Column({ default: UserRoles.NORMAL })
+  @Column({ type: 'enum', enum: UserRoles, default: UserRoles.NORMAL })
   role: UserRoles
 
   @Column({ default: '' })
   avatar: string
+
+  @Column({
+    type: 'enum',
+    enum: UserSex,
+    default: UserSex.OTHER,
+  })
+  sex: UserSex
+
+  @OneToOne(() => Media, {
+    cascade: true,
+  })
+  @JoinColumn()
+  avatarId: Media
+
+  // @ManyToMany(() => User)
+  // @JoinTable()
+  // friends: User[]
+
+  @OneToMany(() => RequestFriend, (request) => request.user)
+  request_friend: RequestFriend[]
+
+  @OneToMany(() => RequestFriend, (request) => request.user_target)
+  request_friend_receive: RequestFriend[]
+
+  @OneToMany(() => Media, (media) => media.id)
+  medias: Media[]
+
+  @OneToMany(() => Album, (album) => album.user, {
+    cascade: true,
+  })
+  albums: Album[]
+
+  @OneToMany(() => Post, (post) => post.user)
+  posts: Post[]
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments: Comment[]
 
   @CreateDateColumn()
   createdAt: Date

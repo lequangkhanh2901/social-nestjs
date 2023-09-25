@@ -1,5 +1,9 @@
-import { Exclude } from 'class-transformer'
-import { UserRoles, UserStatus } from 'src/core/enums/user'
+import { ApiProperty } from '@nestjs/swagger'
+import { Exclude, Transform } from 'class-transformer'
+import { IsEnum, IsString, Length } from 'class-validator'
+import { NotMatch } from 'src/core/decorators/validation/not-match.decorator'
+import { UserRoles, UserSex, UserStatus } from 'src/core/enums/user'
+import Media from '../media/media.entity'
 
 export class CreateUserDto {
   email: string
@@ -38,12 +42,13 @@ export class CreateUserDto {
 }
 
 export class ResponseUser {
-  @Exclude()
+  // @Exclude()
   id: string
 
   name: string
   username: string
   email: string
+  sex: UserSex
 
   @Exclude()
   password: string
@@ -52,10 +57,61 @@ export class ResponseUser {
   status: UserStatus
   role: UserRoles
   avatar: string
+  avatarId: Media
   createdAt: Date
   updatedAt: Date
 
   constructor(partial: Partial<ResponseUser>) {
     Object.assign(this, partial)
   }
+}
+
+export class UpdatePasswordDto {
+  @ApiProperty({
+    minLength: 6,
+    maxLength: 30,
+  })
+  @Length(6, 30)
+  @Transform(({ value }) => value?.trim())
+  @IsString()
+  oldPass: string
+
+  @ApiProperty({
+    minLength: 6,
+    maxLength: 30,
+  })
+  @Length(6, 30)
+  @Transform(({ value }) => value?.trim())
+  @IsString()
+  @NotMatch('oldPass')
+  newPass: string
+}
+
+export class UpdateUserDto {
+  @ApiProperty({
+    minLength: 2,
+    maxLength: 30,
+  })
+  @IsString()
+  @Length(2, 30)
+  name: string
+
+  @ApiProperty({
+    minLength: 2,
+    maxLength: 30,
+  })
+  @IsString()
+  @Length(6, 30)
+  username: string
+
+  @ApiProperty({
+    enum: UserSex,
+  })
+  @IsEnum(UserSex)
+  sex: UserSex
+}
+
+export class UploadAvatarDto {
+  @ApiProperty({ type: 'string', format: 'binary' })
+  avatar: any
 }
