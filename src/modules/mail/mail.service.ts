@@ -19,7 +19,7 @@ export class MailService {
       subject,
       template,
       context: {
-        token,
+        url: `${process.env.FE_BASE_URL}/signup/confirm/${token}`,
       },
     })
   }

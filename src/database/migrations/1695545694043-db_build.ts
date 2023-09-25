@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm'
 
-export class BuildDb1694858846189 implements MigrationInterface {
-  name = 'BuildDb1694858846189'
+export class DbBuild1695545694043 implements MigrationInterface {
+  name = 'DbBuild1695545694043'
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
@@ -23,7 +23,7 @@ export class BuildDb1694858846189 implements MigrationInterface {
       `CREATE TABLE \`posts\` (\`id\` varchar(36) NOT NULL, \`content\` text NOT NULL, \`type\` enum ('PRIVATE', 'PUBLIC', 'ONLY_FRIEND') NOT NULL, \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`userId\` varchar(36) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`,
     )
     await queryRunner.query(
-      `CREATE TABLE \`users\` (\`id\` varchar(36) NOT NULL, \`name\` varchar(50) NOT NULL DEFAULT '', \`username\` varchar(50) NOT NULL DEFAULT '', \`email\` varchar(100) NOT NULL, \`password\` text NOT NULL, \`actived\` tinyint NOT NULL DEFAULT 0, \`status\` enum ('ACTIVE', 'BANNED', 'LOCKED') NOT NULL DEFAULT 'ACTIVE', \`role\` enum ('ADMIN', 'MANAGER', 'NORMAL') NOT NULL DEFAULT 'NORMAL', \`avatar\` varchar(255) NOT NULL DEFAULT '', \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), INDEX \`IDX_51b8b26ac168fbe7d6f5653e6c\` (\`name\`), INDEX \`IDX_fe0bb3f6520ee0469504521e71\` (\`username\`), UNIQUE INDEX \`IDX_97672ac88f789774dd47f7c8be\` (\`email\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`,
+      `CREATE TABLE \`users\` (\`id\` varchar(36) NOT NULL, \`name\` varchar(50) NOT NULL DEFAULT '', \`username\` varchar(50) NOT NULL DEFAULT '', \`email\` varchar(100) NOT NULL, \`password\` text NOT NULL, \`actived\` tinyint NOT NULL DEFAULT 0, \`status\` enum ('ACTIVE', 'BANNED', 'LOCKED') NOT NULL DEFAULT 'ACTIVE', \`role\` enum ('ADMIN', 'MANAGER', 'NORMAL') NOT NULL DEFAULT 'NORMAL', \`avatar\` varchar(255) NOT NULL DEFAULT '', \`sex\` enum ('MALE', 'FEMALE', 'OTHER') NOT NULL DEFAULT 'OTHER', \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), INDEX \`IDX_51b8b26ac168fbe7d6f5653e6c\` (\`name\`), UNIQUE INDEX \`IDX_fe0bb3f6520ee0469504521e71\` (\`username\`), UNIQUE INDEX \`IDX_97672ac88f789774dd47f7c8be\` (\`email\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`,
     )
     await queryRunner.query(
       `CREATE TABLE \`friends\` (\`id\` int NOT NULL AUTO_INCREMENT, \`userOneId\` varchar(36) NULL, \`userTwoId\` varchar(36) NULL, UNIQUE INDEX \`REL_e13972ffe2f26327f658f3811c\` (\`userOneId\`), UNIQUE INDEX \`REL_e89cebf7d37c4face022c52793\` (\`userTwoId\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`,

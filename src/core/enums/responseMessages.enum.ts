@@ -8,6 +8,7 @@ export enum ResponseMessage {
   EMAIL_NOT_EXIST = 'EMAIL_NOT_EXIST',
 
   UPDATED = 'UPDATED',
+  UPLOADED = 'UPLOADED',
 
   OLD_PASS_NOT_MATCH = 'OLD_PASS_NOT_MATCH',
 

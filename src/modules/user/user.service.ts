@@ -11,10 +11,20 @@ import { In, Repository } from 'typeorm'
 import { compare, hashSync } from 'bcrypt'
 
 import { User } from './user.entity'
-import { CreateUserDto, ResponseUser, UpdatePasswordDto } from './user.dto'
+import {
+  CreateUserDto,
+  ResponseUser,
+  UpdatePasswordDto,
+  UpdateUserDto,
+} from './user.dto'
 import { saltRound } from 'src/core/constants'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
 import RequestFriend from '../request-friend/request-friend.entity'
+import { getBearerToken } from 'src/core/helper/getToken'
+import { AccessData } from 'src/core/types/common'
+import Media from '../media/media.entity'
+import { MediaType } from 'src/core/enums/media'
+import Album from '../album/album.entity'
 
 @Injectable()
 export class UserService {
@@ -40,7 +50,14 @@ export class UserService {
   }
 
   async getById(id: string) {
-    const user = await this.userRepository.findOneBy({ id })
+    const user = await this.userRepository.findOne({
+      where: {
+        id,
+      },
+      relations: {
+        avatarId: true,
+      },
+    })
     return user
   }
 
@@ -54,6 +71,7 @@ export class UserService {
         },
         relations: {
           request_friend: {},
+          avatarId: true,
           // friends: true,
         },
       }) //findOneBy({ id: data.id })
@@ -97,5 +115,55 @@ export class UserService {
     return await this.userRepository.findBy({
       id: In(uids),
     })
+  }
+
+  async updateUser(authorization: string, data: UpdateUserDto) {
+    const tokenData: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+
+    await this.userRepository.update(
+      {
+        id: tokenData.id,
+      },
+      {
+        ...data,
+      },
+    )
+
+    return data
+  }
+
+  async uploadAvatar(authorization: string, avatar: Express.Multer.File) {
+    const { id }: AccessData = await this.jwtService.verify(
+      getBearerToken(authorization),
+    )
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: {
+        avatarId: true,
+        albums: true,
+      },
+    })
+
+    const media = new Media()
+    const album = new Album()
+    album.type = 'DEFAULT'
+    album.name = 'AVATAR'
+    album.medias = [media]
+    user.albums = [...user.albums, album]
+
+    media.cdn = avatar.path.replace('public', '')
+    media.type = MediaType.IMAGE
+
+    media.user = user
+    user.avatarId = media
+    user.actived = true
+    await this.userRepository.save(user)
+    // }
+
+    return {
+      avatar: user.avatarId.cdn,
+    }
   }
 }

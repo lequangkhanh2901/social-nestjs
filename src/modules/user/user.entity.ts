@@ -1,10 +1,12 @@
-import { UserRoles, UserStatus } from 'src/core/enums/user'
+import { UserRoles, UserSex, UserStatus } from 'src/core/enums/user'
 import {
   Column,
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm'
@@ -23,8 +25,7 @@ export class User {
   @Index()
   name: string
 
-  @Column({ length: 50, default: '' })
-  @Index()
+  @Column({ length: 50, default: '', unique: true })
   username: string
 
   @Column({ length: 100, unique: true })
@@ -49,6 +50,19 @@ export class User {
   @Column({ default: '' })
   avatar: string
 
+  @Column({
+    type: 'enum',
+    enum: UserSex,
+    default: UserSex.OTHER,
+  })
+  sex: UserSex
+
+  @OneToOne(() => Media, {
+    cascade: true,
+  })
+  @JoinColumn()
+  avatarId: Media
+
   // @ManyToMany(() => User)
   // @JoinTable()
   // friends: User[]
@@ -62,7 +76,9 @@ export class User {
   @OneToMany(() => Media, (media) => media.id)
   medias: Media[]
 
-  @OneToMany(() => Album, (album) => album.user)
+  @OneToMany(() => Album, (album) => album.user, {
+    cascade: true,
+  })
   albums: Album[]
 
   @OneToMany(() => Post, (post) => post.user)

@@ -18,9 +18,7 @@ export default class Album {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
-  @ManyToOne(() => User, (user) => user.albums, {
-    cascade: true,
-  })
+  @ManyToOne(() => User, (user) => user.albums)
   user: User
 
   @Column({
