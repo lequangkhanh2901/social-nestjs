@@ -13,4 +13,7 @@ export enum ResponseMessage {
   OLD_PASS_NOT_MATCH = 'OLD_PASS_NOT_MATCH',
 
   ALREADY_FRIEND = 'ALREADY_FRIEND',
+
+  LIKED = 'LIKED',
+  UNLIKED = 'UNLIKED',
 }

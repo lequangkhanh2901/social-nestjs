@@ -11,6 +11,7 @@ import { User } from '../user/user.entity'
 import { PostType } from 'src/core/enums/post'
 import Comment from '../comment/comment.entity'
 import Like from '../like/like.entity'
+import Media from '../media/media.entity'
 
 @Entity({
   name: 'posts',
@@ -38,6 +39,11 @@ export default class Post {
 
   @OneToMany(() => Like, (like) => like.post)
   likes: Like[]
+
+  @OneToMany(() => Media, (media) => media.post, {
+    cascade: true,
+  })
+  medias: Media[]
 
   @CreateDateColumn()
   createdAt: Date

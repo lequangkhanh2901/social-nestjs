@@ -19,6 +19,7 @@ import { AuthGuard } from 'src/core/guards/auth.guard'
 import { UpdatePasswordDto, UpdateUserDto, UploadAvatarDto } from './user.dto'
 import generateKey from 'src/core/helper/generateKey'
 import { UserService } from './user.service'
+import { mkdirSync } from 'fs'
 
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
@@ -50,7 +51,10 @@ export class UserController {
   @UseInterceptors(
     FileInterceptor('avatar', {
       storage: diskStorage({
-        destination: './public/images',
+        destination: (req, file, callback) => {
+          mkdirSync('./public/images/', { recursive: true })
+          return callback(null, './public/images/')
+        },
         filename: (req, file, callback) => {
           const ext = extname(file.originalname)
           const fileName = `${Date.now()}-${generateKey(10)}${ext}`

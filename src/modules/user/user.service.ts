@@ -76,7 +76,10 @@ export class UserService {
         },
       }) //findOneBy({ id: data.id })
 
-      if (!user) throw new NotFoundException()
+      if (!user) throw new UnauthorizedException()
+      if (user.avatarId) {
+        user.avatar = process.env.BE_BASE_URL + user.avatarId.cdn
+      }
       return new ResponseUser(user)
     } catch (error) {
       if (error.status === 404) throw error
@@ -122,6 +125,12 @@ export class UserService {
       getBearerToken(authorization),
     )
 
+    const user = await this.userRepository.findOneBy({
+      username: data.username,
+    })
+    if (user)
+      throw new HttpException('EXISTED_USERNANE', HttpStatus.BAD_REQUEST)
+
     await this.userRepository.update(
       {
         id: tokenData.id,
@@ -163,7 +172,7 @@ export class UserService {
     // }
 
     return {
-      avatar: user.avatarId.cdn,
+      avatar: process.env.BE_BASE_URL + user.avatarId.cdn,
     }
   }
 }

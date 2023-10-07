@@ -9,6 +9,7 @@ import {
 import { User } from '../user/user.entity'
 import { MediaType } from 'src/core/enums/media'
 import Album from '../album/album.entity'
+import Post from '../post/post.entity'
 
 @Entity({
   name: 'medias',
@@ -33,6 +34,9 @@ export default class Media {
     nullable: true,
   })
   albums: Album[]
+
+  @ManyToOne(() => Post, (post) => post.medias)
+  post: Post
 
   @CreateDateColumn()
   createdAt: Date

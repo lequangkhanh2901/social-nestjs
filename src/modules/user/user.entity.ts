@@ -15,6 +15,7 @@ import Media from '../media/media.entity'
 import Album from '../album/album.entity'
 import Post from '../post/post.entity'
 import Comment from '../comment/comment.entity'
+import Like from '../like/like.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -86,6 +87,9 @@ export class User {
 
   @OneToMany(() => Comment, (comment) => comment.user)
   comments: Comment[]
+
+  @OneToMany(() => Like, (like) => like.user)
+  likes: Like[]
 
   @CreateDateColumn()
   createdAt: Date
