@@ -34,10 +34,14 @@ export default class Post {
   })
   type: PostType
 
-  @OneToMany(() => Comment, (comment) => comment.post)
+  @OneToMany(() => Comment, (comment) => comment.post, {
+    cascade: true,
+  })
   comments: Comment[]
 
-  @OneToMany(() => Like, (like) => like.post)
+  @OneToMany(() => Like, (like) => like.post, {
+    cascade: true,
+  })
   likes: Like[]
 
   @OneToMany(() => Media, (media) => media.post, {

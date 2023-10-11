@@ -4,6 +4,7 @@ import {
   Entity,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   Tree,
   TreeChildren,
@@ -13,6 +14,7 @@ import {
 import { User } from '../user/user.entity'
 import Post from '../post/post.entity'
 import Like from '../like/like.entity'
+import Media from '../media/media.entity'
 
 @Entity()
 @Tree('materialized-path')
@@ -27,6 +29,7 @@ export default class Comment {
 
   @ManyToOne(() => Post, (post) => post.comments, {
     nullable: false,
+    onDelete: 'CASCADE',
   })
   post: Post
 
@@ -39,11 +42,20 @@ export default class Comment {
   @OneToMany(() => Like, (like) => like.comment)
   likes: Like[]
 
-  @TreeParent()
+  @TreeParent({
+    onDelete: 'CASCADE',
+  })
   parent: Comment
 
-  @TreeChildren()
+  @TreeChildren({
+    cascade: true,
+  })
   children: Comment[]
+
+  @OneToOne(() => Media, (media) => media.comment, {
+    cascade: true,
+  })
+  media: Media
 
   @CreateDateColumn()
   createdAt: Date

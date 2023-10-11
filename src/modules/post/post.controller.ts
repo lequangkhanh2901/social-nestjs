@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpException,
@@ -21,7 +22,7 @@ import { mkdirSync } from 'fs'
 import { AuthGuard } from 'src/core/guards/auth.guard'
 import generateKey from 'src/core/helper/generateKey'
 import { PostService } from './post.service'
-import { CreatePostDto, QueryDto } from './post.dto'
+import { CreatePostDto, DeletePostDto, QueryDto } from './post.dto'
 
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
@@ -64,6 +65,7 @@ export class PostController {
     }),
   )
   @ApiConsumes('multipart/form-data')
+  @ApiConsumes('application/json')
   createPost(
     @Headers() headers,
     @Body() body: CreatePostDto,
@@ -88,5 +90,10 @@ export class PostController {
       query.limit,
       query.skip,
     )
+  }
+
+  @Delete()
+  deletePost(@Headers() headers, @Body() body: DeletePostDto) {
+    return this.postService.deletePost(headers.authorization, body.id)
   }
 }

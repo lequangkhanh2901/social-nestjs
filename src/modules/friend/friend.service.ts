@@ -4,6 +4,7 @@ import { Repository } from 'typeorm'
 import Friend from './friend.entity'
 import { JwtService } from '@nestjs/jwt'
 import { UserService } from '../user/user.service'
+import { User } from '../user/user.entity'
 
 @Injectable()
 export class FriendService {
@@ -33,5 +34,33 @@ export class FriendService {
     })
 
     return friend
+  }
+
+  async getIdsFriendOfUser(idUser: string) {
+    const user = new User()
+    user.id = idUser
+    const friends = await this.friendRepository.find({
+      where: [
+        {
+          user_one: user,
+        },
+        {
+          user_two: user,
+        },
+      ],
+      relations: {
+        user_one: true,
+        user_two: true,
+      },
+      select: {
+        user_one: { id: true },
+        user_two: { id: true },
+      },
+    })
+    return friends.map((friend) => {
+      return friend.user_one.id === idUser
+        ? friend.user_two.id
+        : friend.user_one.id
+    })
   }
 }

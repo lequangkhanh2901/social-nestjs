@@ -17,6 +17,7 @@ export default class Like {
 
   @ManyToOne(() => Post, (post) => post.id, {
     nullable: true,
+    onDelete: 'CASCADE',
   })
   post: Post
 

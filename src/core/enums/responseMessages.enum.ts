@@ -16,4 +16,6 @@ export enum ResponseMessage {
 
   LIKED = 'LIKED',
   UNLIKED = 'UNLIKED',
+
+  DELETED = 'DELETED',
 }

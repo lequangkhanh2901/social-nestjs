@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Exclude, Expose } from 'class-transformer'
-import { Allow, IsNumber, IsOptional } from 'class-validator'
+import { Allow, IsNumber, IsOptional, IsUUID } from 'class-validator'
 import { PostType } from 'src/core/enums/post'
 import { UserRoles, UserSex } from 'src/core/enums/user'
 import Like from '../like/like.entity'
@@ -95,4 +95,13 @@ export class ResponsePost {
   constructor(partial: Partial<ResponsePost>) {
     Object.assign(this, partial)
   }
+}
+
+export class DeletePostDto {
+  @ApiProperty({
+    type: 'string',
+    format: 'uuid',
+  })
+  @IsUUID()
+  id: string
 }
