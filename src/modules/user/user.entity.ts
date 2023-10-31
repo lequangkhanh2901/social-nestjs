@@ -26,7 +26,7 @@ export class User {
   @Index()
   name: string
 
-  @Column({ length: 50, default: '', unique: true })
+  @Column({ length: 50, unique: true, nullable: true })
   username: string
 
   @Column({ length: 100, unique: true })
@@ -68,10 +68,14 @@ export class User {
   // @JoinTable()
   // friends: User[]
 
-  @OneToMany(() => RequestFriend, (request) => request.user)
+  @OneToMany(() => RequestFriend, (request) => request.user, {
+    cascade: true,
+  })
   request_friend: RequestFriend[]
 
-  @OneToMany(() => RequestFriend, (request) => request.user_target)
+  @OneToMany(() => RequestFriend, (request) => request.user_target, {
+    cascade: true,
+  })
   request_friend_receive: RequestFriend[]
 
   @OneToMany(() => Media, (media) => media.id)

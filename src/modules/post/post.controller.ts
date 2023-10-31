@@ -6,6 +6,7 @@ import {
   Headers,
   HttpException,
   HttpStatus,
+  Param,
   ParseFilePipeBuilder,
   Post,
   Query,
@@ -21,8 +22,9 @@ import { mkdirSync } from 'fs'
 
 import { AuthGuard } from 'src/core/guards/auth.guard'
 import generateKey from 'src/core/helper/generateKey'
+import { QueryDto } from 'src/core/dto'
 import { PostService } from './post.service'
-import { CreatePostDto, DeletePostDto, QueryDto } from './post.dto'
+import { CreatePostDto, DeletePostDto } from './post.dto'
 
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
@@ -87,6 +89,20 @@ export class PostController {
   getPosts(@Headers() headers, @Query() query: QueryDto) {
     return this.postService.getPosts(
       headers.authorization,
+      query.limit,
+      query.skip,
+    )
+  }
+
+  @Get(':username')
+  getPostsByUsername(
+    @Headers() headers,
+    @Query() query: QueryDto,
+    @Param('username') username: string,
+  ) {
+    return this.postService.getPostsByUsername(
+      headers.authorization,
+      username,
       query.limit,
       query.skip,
     )

@@ -11,15 +11,15 @@ export default class RequestFriend {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
-  @ManyToOne(() => User, (user) => user.id, {
-    cascade: true,
+  @ManyToOne(() => User, (user) => user.request_friend, {
+    onDelete: 'CASCADE',
   })
-  user: string
+  user: User
 
   @ManyToOne(() => User, (user) => user.request_friend_receive, {
-    cascade: true,
+    onDelete: 'CASCADE',
   })
-  user_target: User[]
+  user_target: User
 
   @CreateDateColumn()
   createdAt: Date

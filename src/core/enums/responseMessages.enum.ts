@@ -18,4 +18,8 @@ export enum ResponseMessage {
   UNLIKED = 'UNLIKED',
 
   DELETED = 'DELETED',
+
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  CANCELED = 'CANCELED',
 }

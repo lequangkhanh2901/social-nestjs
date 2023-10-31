@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt'
 
 import { UserRoles } from '../enums/user'
 import { ROLES_KEY } from '../decorators/roles.decorator'
+import { getBearerToken } from '../helper/getToken'
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -28,7 +29,7 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest()
     try {
       const data = await this.jwtService.verifyAsync(
-        request.headers.authorization,
+        getBearerToken(request.headers.authorization),
       )
       if (!data.role) throw new UnauthorizedException()
       return requiredRoles.some((role) => role === data.role)

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Headers,
+  Param,
   ParseFilePipeBuilder,
   Post,
   Put,
@@ -10,16 +11,31 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger'
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { extname } from 'path'
 import { diskStorage } from 'multer'
+import { mkdirSync } from 'fs'
 
 import { AuthGuard } from 'src/core/guards/auth.guard'
-import { UpdatePasswordDto, UpdateUserDto, UploadAvatarDto } from './user.dto'
 import generateKey from 'src/core/helper/generateKey'
+import { RolesGuard } from 'src/core/guards/roles.guard'
+import { Roles } from 'src/core/decorators/roles.decorator'
+import { UserRoles } from 'src/core/enums/user'
+
 import { UserService } from './user.service'
-import { mkdirSync } from 'fs'
+import {
+  CreateUserDto,
+  GetUserParams,
+  UpdatePasswordDto,
+  UpdateUserDto,
+  UploadAvatarDto,
+} from './user.dto'
 
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
@@ -78,5 +94,23 @@ export class UserController {
     avatar: Express.Multer.File,
   ) {
     return this.userService.uploadAvatar(headers.authorization, avatar)
+  }
+
+  @Get(':username')
+  getByUsername(@Headers() headers, @Param() params: GetUserParams) {
+    return this.userService.getByUsername(
+      headers.authorization,
+      params.username,
+    )
+  }
+
+  @ApiOperation({
+    summary: 'Create account by admin',
+  })
+  @Post()
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN)
+  createAccount(@Body() body: CreateUserDto) {
+    return this.userService.createAccount(body)
   }
 }

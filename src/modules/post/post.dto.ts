@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Exclude, Expose } from 'class-transformer'
-import { Allow, IsNumber, IsOptional, IsUUID } from 'class-validator'
+import { Allow, IsUUID } from 'class-validator'
 import { PostType } from 'src/core/enums/post'
 import { UserRoles, UserSex } from 'src/core/enums/user'
 import Like from '../like/like.entity'
@@ -27,22 +27,6 @@ export class CreatePostDto {
     },
   })
   medias?: any[]
-}
-
-export class QueryDto {
-  @ApiProperty({
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  limit?: number
-
-  @ApiProperty({
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  skip?: number
 }
 
 export class ResponseUserPost {
