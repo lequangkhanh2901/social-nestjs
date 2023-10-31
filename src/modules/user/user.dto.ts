@@ -1,12 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Exclude, Transform } from 'class-transformer'
-import { IsEnum, IsString, Length } from 'class-validator'
+import { IsEmail, IsEnum, IsNotEmpty, IsString, Length } from 'class-validator'
 import { NotMatch } from 'src/core/decorators/validation/not-match.decorator'
 import { UserRoles, UserSex, UserStatus } from 'src/core/enums/user'
 import Media from '../media/media.entity'
 
 export class CreateUserDto {
+  @ApiProperty()
+  @IsEmail()
   email: string
+
+  @ApiProperty()
+  @Length(6, 30)
   password: string
   // @ApiProperty({
   //   maxLength: 50,
@@ -114,4 +119,12 @@ export class UpdateUserDto {
 export class UploadAvatarDto {
   @ApiProperty({ type: 'string', format: 'binary' })
   avatar: any
+}
+
+export class GetUserParams {
+  @ApiProperty()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim())
+  @IsString()
+  username: string
 }

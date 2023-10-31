@@ -1,15 +1,21 @@
 import {
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  forwardRef,
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
-import { In, Repository } from 'typeorm'
+import { FindOptionsSelect, In, Repository } from 'typeorm'
 import { compare, hashSync } from 'bcrypt'
 
+import { saltRound } from 'src/core/constants'
+import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
+import { getBearerToken } from 'src/core/helper/getToken'
+import { AccessData } from 'src/core/types/common'
 import { User } from './user.entity'
 import {
   CreateUserDto,
@@ -17,23 +23,22 @@ import {
   UpdatePasswordDto,
   UpdateUserDto,
 } from './user.dto'
-import { saltRound } from 'src/core/constants'
-import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
-import RequestFriend from '../request-friend/request-friend.entity'
-import { getBearerToken } from 'src/core/helper/getToken'
-import { AccessData } from 'src/core/types/common'
-import Media from '../media/media.entity'
+import { RelationWithUser, UserStatus } from 'src/core/enums/user'
 import { MediaType } from 'src/core/enums/media'
+import Media from '../media/media.entity'
 import Album from '../album/album.entity'
+import { FriendService } from '../friend/friend.service'
+import { RequestFriendService } from '../request-friend/request-friend.service'
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
-    @InjectRepository(RequestFriend)
-    private readonly requestFriendRepository: Repository<RequestFriend>,
-
+    @Inject(forwardRef(() => FriendService))
+    private friendService: FriendService,
     private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => RequestFriendService))
+    private readonly requestFriendService: RequestFriendService,
   ) {}
 
   async getByEmail(email: string) {
@@ -76,7 +81,10 @@ export class UserService {
         },
       }) //findOneBy({ id: data.id })
 
-      if (!user) throw new NotFoundException()
+      if (!user) throw new UnauthorizedException()
+      if (user.avatarId) {
+        user.avatar = process.env.BE_BASE_URL + user.avatarId.cdn
+      }
       return new ResponseUser(user)
     } catch (error) {
       if (error.status === 404) throw error
@@ -122,6 +130,12 @@ export class UserService {
       getBearerToken(authorization),
     )
 
+    const user = await this.userRepository.findOneBy({
+      username: data.username,
+    })
+    if (user)
+      throw new HttpException('EXISTED_USERNANE', HttpStatus.BAD_REQUEST)
+
     await this.userRepository.update(
       {
         id: tokenData.id,
@@ -163,7 +177,121 @@ export class UserService {
     // }
 
     return {
-      avatar: user.avatarId.cdn,
+      avatar: process.env.BE_BASE_URL + user.avatarId.cdn,
     }
+  }
+
+  async isExist(id: string) {
+    const userCount = await this.userRepository.exist({
+      where: {
+        id,
+      },
+    })
+
+    return userCount
+  }
+
+  async isExistByEmail(email: string) {
+    return await this.userRepository.exist({
+      where: {
+        email,
+      },
+    })
+  }
+
+  async getByUsername(authorization: string, username: string) {
+    const { id }: AccessData = await this.jwtService.verify(
+      getBearerToken(authorization),
+    )
+
+    const user = await this.userRepository.findOne({
+      where: {
+        username,
+        actived: true,
+        status: UserStatus.ACTIVE,
+      },
+      relations: {
+        avatarId: true,
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        status: true,
+        avatarId: {
+          id: true,
+          cdn: true,
+        },
+        sex: true,
+      },
+    })
+
+    if (!user) throw new NotFoundException()
+
+    let countFriend: number
+    if (user.id !== id) {
+      const [relation, count] = await Promise.all([
+        this.getRelation(id, user.id),
+        this.friendService.count(user.id),
+      ])
+      countFriend = count
+      user['relation'] = relation
+    } else {
+      countFriend = await this.friendService.count(user.id)
+    }
+
+    user.avatarId.cdn = `${process.env.BE_BASE_URL}${user.avatarId.cdn}`
+
+    return {
+      ...user,
+      countFriend,
+    }
+  }
+
+  async getRelation(id1: string, id2: string) {
+    const isFriend = await this.friendService.isExist(id1, id2)
+    if (isFriend) return RelationWithUser.FRIEND
+
+    const waiting = await this.requestFriendService.getByTwoIdUser(id1, id2)
+    if (waiting) {
+      if (waiting.user.id === id1)
+        return RelationWithUser.WAITING_ACCEPT_BY_USER
+
+      return RelationWithUser.WAITING_ACCEPT_BY_ME
+    }
+
+    return RelationWithUser.NONE
+  }
+
+  async getByUsernameOptions(
+    username: string,
+    options?: {
+      select?: FindOptionsSelect<User>
+    },
+  ) {
+    const user = await this.userRepository.findOne({
+      where: {
+        username,
+      },
+      select: options?.select,
+    })
+
+    return user
+  }
+
+  async createAccount(body: CreateUserDto) {
+    const isExist = await this.isExistByEmail(body.email)
+    if (isExist)
+      throw new HttpException(
+        ResponseMessage.EXISTED_EMAIL,
+        HttpStatus.BAD_REQUEST,
+      )
+
+    const user = new User()
+    user.email = body.email
+    user.password = hashSync(body.password, saltRound)
+
+    await this.userRepository.save(user)
+    return new ResponseUser(user)
   }
 }

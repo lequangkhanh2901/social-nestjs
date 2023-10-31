@@ -6,6 +6,7 @@ import {
 } from 'typeorm'
 import Post from '../post/post.entity'
 import Comment from '../comment/comment.entity'
+import { User } from '../user/user.entity'
 
 @Entity({
   name: 'likes',
@@ -16,6 +17,7 @@ export default class Like {
 
   @ManyToOne(() => Post, (post) => post.id, {
     nullable: true,
+    onDelete: 'CASCADE',
   })
   post: Post
 
@@ -23,6 +25,9 @@ export default class Like {
     nullable: true,
   })
   comment: Comment
+
+  @ManyToOne(() => User, (user) => user.id)
+  user: User
 
   @CreateDateColumn()
   createdAt: Date

@@ -1,4 +1,199 @@
-import { Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
+import { InjectRepository } from '@nestjs/typeorm'
+import { TreeRepository } from 'typeorm'
+import { extname } from 'path'
+import { unlink } from 'fs'
+
+import { getBearerToken } from 'src/core/helper/getToken'
+import { AccessData } from 'src/core/types/common'
+import { MediaType, RelationType } from 'src/core/enums/media'
+import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
+import { PostService } from '../post/post.service'
+import Comment from './comment.entity'
+import { User } from '../user/user.entity'
+import { AddCommentDto } from './comment.dto'
+import Media from '../media/media.entity'
 
 @Injectable()
-export class CommentService {}
+export class CommentService {
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly postService: PostService,
+    @InjectRepository(Comment)
+    private readonly commentRepository: TreeRepository<Comment>,
+  ) {}
+
+  async addComment(
+    authorization: string,
+    body: AddCommentDto,
+    file: Express.Multer.File,
+  ) {
+    if (!body.content && !file) throw new BadRequestException()
+
+    const { id }: AccessData = await this.jwtService.verify(
+      getBearerToken(authorization),
+    )
+
+    const post = await this.postService.getPostById(body.id)
+    if (!post) throw new NotFoundException()
+
+    const user = new User()
+    user.id = id
+
+    const comment = new Comment()
+    if (body.parentId) {
+      const parentComment = new Comment()
+      parentComment.id = body.parentId
+
+      const parentComments = await this.commentRepository.findAncestors(
+        parentComment,
+      )
+
+      if (parentComments.length === 0) throw new NotFoundException()
+
+      if (parentComments.length === 3) {
+        comment.parent = parentComments[1]
+      } else {
+        comment.parent = parentComments[parentComments.length - 1]
+      }
+    }
+    if (file) {
+      const media = new Media()
+      media.cdn = file.path.replace('public', '')
+      media.type =
+        extname(file.filename) === '.mp4' ? MediaType.VIDEO : MediaType.IMAGE
+      media.relationType = RelationType.COMMENT
+      comment.media = media
+    }
+
+    comment.user = user
+    comment.post = post
+    comment.content = body.content
+
+    const response = await this.commentRepository.save(comment)
+    if (response.media)
+      response.media.cdn = `${process.env.BE_BASE_URL}${response.media.cdn}`
+
+    return response
+  }
+
+  async getCommentsPost(authorization: string, postId: string) {
+    const { id } = await this.jwtService.verify(getBearerToken(authorization))
+
+    const comments = await this.commentRepository.find({
+      where: {
+        post: {
+          id: postId,
+        },
+      },
+      relations: {
+        user: {
+          avatarId: true,
+        },
+        parent: true,
+        children: true,
+        likes: {
+          user: true,
+        },
+        media: true,
+      },
+      select: {
+        user: {
+          name: true,
+          username: true,
+          avatarId: {
+            cdn: true,
+          },
+        },
+        parent: {
+          id: true,
+        },
+        children: {
+          id: true,
+        },
+        likes: {
+          id: true,
+          user: {
+            id: true,
+          },
+        },
+        media: {
+          id: true,
+          cdn: true,
+          type: true,
+        },
+      },
+      order: {
+        // createdAt: 'DESC',
+      },
+    })
+
+    comments.forEach((comment) => {
+      comment.user.avatarId.cdn = `${process.env.BE_BASE_URL}${comment.user.avatarId.cdn}`
+      if (comment.media)
+        comment.media.cdn = `${process.env.BE_BASE_URL}${comment.media.cdn}`
+    })
+
+    return comments.map((comment) => {
+      const comentData = {
+        ...comment,
+        likeData: {
+          total: comment.likes.length,
+          isLiked: comment.likes.some((like) => like.user.id === id),
+        },
+      }
+
+      delete comentData.likes
+
+      return comentData
+    })
+  }
+
+  async deleteComment(authorization: string, idComment: number) {
+    const { id }: AccessData = await this.jwtService.verify(
+      getBearerToken(authorization),
+    )
+
+    const comment = await this.commentRepository.findOne({
+      where: {
+        id: idComment,
+      },
+      relations: {
+        user: true,
+        media: true,
+      },
+      select: {
+        user: {
+          id: true,
+        },
+      },
+    })
+
+    if (!comment || comment.user.id !== id) throw new NotFoundException()
+
+    const commentsTree = await this.commentRepository.findDescendants(comment, {
+      relations: ['media'],
+    })
+
+    commentsTree.forEach((cm) => {
+      if (cm.media)
+        unlink(
+          __dirname.replace('dist/modules/comment', 'public') + cm.media.cdn,
+          () => {
+            //
+          },
+        )
+    })
+
+    await this.commentRepository.remove(comment)
+    return {
+      message: ResponseMessage.DELETED,
+      ids: commentsTree.map((comment) => comment.id),
+    }
+  }
+}
