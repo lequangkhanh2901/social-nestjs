@@ -40,6 +40,7 @@ export default class Media {
 
   @ManyToOne(() => Post, (post) => post.medias, {
     onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
   })
   post: Post
 

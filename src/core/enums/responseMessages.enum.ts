@@ -22,4 +22,6 @@ export enum ResponseMessage {
   ACCEPTED = 'ACCEPTED',
   REJECTED = 'REJECTED',
   CANCELED = 'CANCELED',
+
+  INVALID_FILE_TYPE = 'INVALID_FILE_TYPE',
 }

@@ -10,5 +10,6 @@ import { UserModule } from '../user/user.module'
   providers: [MediaService],
   controllers: [MediaController],
   imports: [TypeOrmModule.forFeature([Media]), UserModule],
+  exports: [MediaService],
 })
 export class MediaModule {}

@@ -188,4 +188,9 @@ export class MediaService {
       },
     )
   }
+
+  async deleteMediasByIds(ids: string[]) {
+    await this.mediaRepository.delete(ids)
+    return
+  }
 }

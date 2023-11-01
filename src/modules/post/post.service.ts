@@ -22,8 +22,9 @@ import { User } from '../user/user.entity'
 import Post from './post.entity'
 import Media from '../media/media.entity'
 import { FriendService } from '../friend/friend.service'
-import { CreatePostDto, ResponseUserPost } from './post.dto'
+import { CreatePostDto, ResponseUserPost, UpdatePostDto } from './post.dto'
 import { UserService } from '../user/user.service'
+import { MediaService } from '../media/media.service'
 
 @Injectable()
 export class PostService {
@@ -33,6 +34,7 @@ export class PostService {
     private readonly postRepository: Repository<Post>,
     private readonly friendService: FriendService,
     private readonly userService: UserService,
+    private readonly mediaService: MediaService,
   ) {}
 
   async createPost(
@@ -52,7 +54,6 @@ export class PostService {
         const media = new Media()
         media.cdn = file.path.replace('public', '')
         media.user = user
-        extname(file.filename)
         media.type =
           extname(file.filename) === '.mp4' ? MediaType.VIDEO : MediaType.IMAGE
         media.relationType = RelationType.POST
@@ -345,5 +346,95 @@ export class PostService {
         return _post
       }),
     }
+  }
+
+  async updatePost(
+    authorization: string,
+    data: UpdatePostDto,
+    medias?: Express.Multer.File[],
+  ) {
+    const post = await this.postRepository.findOne({
+      where: {
+        id: data.id,
+      },
+      relations: {
+        medias: true,
+        user: true,
+      },
+      select: {
+        user: {
+          id: true,
+        },
+      },
+    })
+
+    if (!post) throw new NotFoundException()
+
+    const { id }: AccessData = await this.jwtService.verify(
+      getBearerToken(authorization),
+    )
+    if (id !== post.user.id) throw new NotFoundException()
+
+    if (!data.keepMedia) {
+      post.medias.length &&
+        this.mediaService.deleteMediasByIds(
+          post.medias.map((media) => media.id),
+        )
+      post.medias.forEach((media) => {
+        unlink(
+          __dirname.replace('dist/modules/post', 'public') + media.cdn,
+          () => {
+            //
+          },
+        )
+      })
+      post.medias = []
+    } else {
+      const removedMediaIds: string[] = []
+      const removedMediaCdns: string[] = []
+      post.medias.forEach((media) => {
+        if (!data.keepMedia.includes(media.id)) {
+          removedMediaIds.push(media.id)
+          removedMediaCdns.push(media.cdn)
+        }
+      })
+      post.medias = post.medias.filter(
+        (media) => !removedMediaIds.includes(media.id),
+      )
+
+      removedMediaIds.length &&
+        this.mediaService.deleteMediasByIds(removedMediaIds)
+      removedMediaCdns.forEach((link) => {
+        unlink(__dirname.replace('dist/modules/post', 'public') + link, () => {
+          //
+        })
+      })
+    }
+
+    if (medias) {
+      const user = new User()
+      user.id = id
+
+      medias.forEach((file) => {
+        const media = new Media()
+        media.cdn = file.path.replace('public', '')
+        media.user = user
+        media.type =
+          extname(file.filename) === '.mp4' ? MediaType.VIDEO : MediaType.IMAGE
+        media.relationType = RelationType.POST
+
+        post.medias.push(media)
+      })
+    }
+
+    post.content = data.content
+    post.type = data.type
+
+    await this.postRepository.save(post)
+
+    post.medias.forEach((media) => {
+      media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`
+    })
+    return post
   }
 }

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Exclude, Expose } from 'class-transformer'
-import { Allow, IsUUID } from 'class-validator'
+import { Allow, IsOptional, IsString, IsUUID } from 'class-validator'
 import { PostType } from 'src/core/enums/post'
 import { UserRoles, UserSex } from 'src/core/enums/user'
 import Like from '../like/like.entity'
@@ -88,4 +88,44 @@ export class DeletePostDto {
   })
   @IsUUID()
   id: string
+}
+
+export class UpdatePostDto {
+  @ApiProperty()
+  @IsUUID()
+  id: string
+
+  @ApiProperty({
+    required: false,
+  })
+  @Allow()
+  @IsString()
+  @IsOptional()
+  content?: string
+
+  @ApiProperty({
+    required: false,
+    type: 'array',
+    items: {
+      type: 'string',
+      format: 'binary',
+    },
+  })
+  medias?: any[]
+
+  @ApiProperty({
+    required: false,
+    type: 'array',
+    format: 'uuid',
+  })
+  @Allow()
+  @IsUUID('all', { each: true })
+  @IsOptional()
+  keepMedia?: string[]
+
+  @Allow()
+  @ApiProperty({
+    enum: PostType,
+  })
+  type: PostType
 }
