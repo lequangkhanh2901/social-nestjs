@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
-import { FindOptionsSelect, In, Repository } from 'typeorm'
+import { FindManyOptions, FindOptionsSelect, In, Repository } from 'typeorm'
 import { compare, hashSync } from 'bcrypt'
 
 import { saltRound } from 'src/core/constants'
@@ -229,13 +229,16 @@ export class UserService {
     if (!user) throw new NotFoundException()
 
     let countFriend: number
+    let countSameFriend: null | number = null
     if (user.id !== id) {
-      const [relation, count] = await Promise.all([
+      const [relation, count, _countSameFriend] = await Promise.all([
         this.getRelation(id, user.id),
         this.friendService.count(user.id),
+        this.friendService.countSameFriend(id, user.id),
       ])
       countFriend = count
       user['relation'] = relation
+      countSameFriend = _countSameFriend
     } else {
       countFriend = await this.friendService.count(user.id)
     }
@@ -245,6 +248,7 @@ export class UserService {
     return {
       ...user,
       countFriend,
+      countSameFriend,
     }
   }
 
@@ -293,5 +297,23 @@ export class UserService {
 
     await this.userRepository.save(user)
     return new ResponseUser(user)
+  }
+
+  async getUsersOption({
+    options,
+    includeCount,
+  }: {
+    options: FindManyOptions<User>
+    includeCount?: true
+  }) {
+    if (includeCount) {
+      return await this.userRepository.findAndCount(options)
+    }
+    return await this.userRepository.find(options)
+  }
+
+  async count(options: FindManyOptions<User>) {
+    // for export
+    return await this.userRepository.count(options)
   }
 }

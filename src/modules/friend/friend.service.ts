@@ -1,12 +1,13 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
   forwardRef,
 } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
-import { Repository } from 'typeorm'
+import { DataSource, Like, Repository } from 'typeorm'
 
 import { AccessData } from 'src/core/types/common'
 import { getBearerToken } from 'src/core/helper/getToken'
@@ -24,6 +25,7 @@ export class FriendService {
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => UserService))
     private userService: UserService,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async getFriend(uid1: string, uid2: string) {
@@ -128,13 +130,22 @@ export class FriendService {
     })
   }
 
-  async getFriendsUsername(
-    authorization: string,
-    username: string,
+  async getFriendsUsername({
+    authorization,
+    username,
+    type = 'ALL',
     limit = 10,
     skip = 0,
-  ) {
-    const {}: AccessData = await this.jwtService.verify(
+    search,
+  }: {
+    authorization: string
+    username: string
+    type: 'ALL' | 'SAME_FRIEND'
+    limit?: number
+    skip?: number
+    search?: string
+  }) {
+    const { id }: AccessData = await this.jwtService.verify(
       getBearerToken(authorization),
     )
 
@@ -145,6 +156,51 @@ export class FriendService {
     })
 
     if (!user) throw new NotFoundException()
+    if (type === 'SAME_FRIEND') {
+      if (user.id === id) throw new BadRequestException()
+
+      const userIds = await this.getSameFriendsId(id, user.id)
+      if (userIds.length === 0)
+        return generateResponse(
+          {
+            friends: [],
+          },
+          { count: 0 },
+        )
+
+      const [users, count] = await Promise.all([
+        this.dataSource.query(
+          `SELECT users.id, users.name, users.username, medias.id AS avatarId, medias.cdn FROM users INNER JOIN medias ON users.avatarIdId = medias.id WHERE (${userIds.map(
+            (_id, index) => {
+              if (index === userIds.length - 1) return `users.id = '${_id}' `
+              return `users.id = '${_id}' OR `
+            },
+          )}) ${
+            search
+              ? `AND (users.name LIKE '%${search}%' OR users.username = '%${search}%')`
+              : ''
+          }`,
+        ),
+        this.userService.count({
+          where: userIds.flatMap((_id) => [
+            { id: _id, name: search ? Like(`%${search}%`) : undefined },
+            { id: _id, username: search ? Like(`%${search}%`) : undefined },
+          ]),
+        }),
+      ])
+
+      return generateResponse(
+        {
+          friends: users.map((_user) => ({
+            ..._user,
+            cdn: `${process.env.BE_BASE_URL}${_user.cdn}`,
+          })),
+        },
+        {
+          count,
+        },
+      )
+    }
 
     // get relation here
 
@@ -154,8 +210,30 @@ export class FriendService {
           user_one: {
             id: user.id,
           },
+          user_two: {
+            name: search ? Like(`%${search}%`) : undefined,
+          },
         },
         {
+          user_one: {
+            name: search ? Like(`%${search}%`) : undefined,
+          },
+          user_two: {
+            id: user.id,
+          },
+        },
+        {
+          user_one: {
+            id: user.id,
+          },
+          user_two: {
+            username: search ? Like(`%${search}%`) : undefined,
+          },
+        },
+        {
+          user_one: {
+            username: search ? Like(`%${search}%`) : undefined,
+          },
           user_two: {
             id: user.id,
           },
@@ -291,5 +369,78 @@ export class FriendService {
         count,
       },
     )
+  }
+
+  async getSameFriendsId(currentUserId: string, targetUserId: string) {
+    const [friendsOfCurrent, friendsOfTarget] = await Promise.all([
+      this.friendRepository.find({
+        where: [
+          {
+            user_one: {
+              id: currentUserId,
+            },
+          },
+          {
+            user_two: {
+              id: currentUserId,
+            },
+          },
+        ],
+        relations: {
+          user_one: true,
+          user_two: true,
+        },
+        select: {
+          user_one: {
+            id: true,
+          },
+          user_two: {
+            id: true,
+          },
+        },
+      }),
+      this.friendRepository.find({
+        where: [
+          {
+            user_one: {
+              id: targetUserId,
+            },
+          },
+          {
+            user_two: {
+              id: targetUserId,
+            },
+          },
+        ],
+        relations: {
+          user_one: true,
+          user_two: true,
+        },
+        select: {
+          user_one: {
+            id: true,
+          },
+          user_two: {
+            id: true,
+          },
+        },
+      }),
+    ])
+
+    const idFriendsOfCurrent = friendsOfCurrent.map((friend) => {
+      if (friend.user_one.id === currentUserId) return friend.user_two.id
+      return friend.user_one.id
+    })
+
+    const idFriendsTarget = friendsOfTarget.map((friend) => {
+      if (friend.user_one.id === targetUserId) return friend.user_two.id
+      return friend.user_one.id
+    })
+
+    return idFriendsOfCurrent.filter((id) => idFriendsTarget.includes(id))
+  }
+
+  async countSameFriend(currentUserId: string, targetUserId: string) {
+    return (await this.getSameFriendsId(currentUserId, targetUserId)).length
   }
 }
