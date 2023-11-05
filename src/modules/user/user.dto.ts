@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Exclude, Transform } from 'class-transformer'
-import { IsEmail, IsEnum, IsNotEmpty, IsString, Length } from 'class-validator'
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator'
 import { NotMatch } from 'src/core/decorators/validation/not-match.decorator'
 import { UserRoles, UserSex, UserStatus } from 'src/core/enums/user'
 import { QueryDto } from 'src/core/dto'
@@ -131,8 +138,10 @@ export class GetUserParams {
 }
 
 export class RandomUserQueryDto extends QueryDto {
-  @ApiProperty()
+  @ApiProperty({
+    required: false,
+  })
   @IsString()
-  @IsNotEmpty()
-  name: string
+  @IsOptional()
+  name?: string
 }

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common'
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
-import { DataSource, In, Like, Repository } from 'typeorm'
+import { DataSource, In, Like, Not, Repository } from 'typeorm'
 
 import { AccessData } from 'src/core/types/common'
 import { getBearerToken } from 'src/core/helper/getToken'
@@ -50,15 +50,17 @@ export class FriendService {
   }
 
   async getIdsFriendOfUser(idUser: string) {
-    const user = new User()
-    user.id = idUser
     const friends = await this.friendRepository.find({
       where: [
         {
-          user_one: user,
+          user_one: {
+            id: idUser,
+          },
         },
         {
-          user_two: user,
+          user_two: {
+            id: idUser,
+          },
         },
       ],
       relations: {
@@ -459,7 +461,9 @@ export class FriendService {
       getBearerToken(authorization),
     )
 
-    const idUsers = await this.getIdsFriendOfUser(id)
+    const idUsers = (await this.getIdsFriendOfUser(id)).filter(
+      (_id) => id !== _id,
+    )
 
     if (!idUsers.length) return generateResponse({ users: [] }, { count: 0 })
 
@@ -471,11 +475,13 @@ export class FriendService {
           },
 
           user_two: {
+            id: Not(id),
             name: name ? Like(`%${name}%`) : undefined,
           },
         },
         {
           user_one: {
+            id: Not(id),
             name: name ? Like(`%${name}%`) : undefined,
           },
           user_two: {
@@ -515,23 +521,29 @@ export class FriendService {
       skip,
     })
 
-    const _users = friends
-      .map((friend) => {
-        if (idUsers.includes(friend.user_one.id))
-          return {
-            ...friend.user_two,
-            avatarId: {
-              cdn: `${process.env.BE_BASE_URL}${friend.user_two.avatarId.cdn}`,
-            },
-          }
+    const _users = friends.map((friend) => {
+      if (idUsers.includes(friend.user_one.id))
         return {
-          ...friend.user_one,
+          ...friend.user_two,
           avatarId: {
-            cdn: `${process.env.BE_BASE_URL}${friend.user_one.avatarId.cdn}`,
+            cdn: `${process.env.BE_BASE_URL}${friend.user_two.avatarId.cdn}`,
           },
         }
-      })
-      .filter((_user) => _user.id !== id)
+      return {
+        ...friend.user_one,
+        avatarId: {
+          cdn: `${process.env.BE_BASE_URL}${friend.user_one.avatarId.cdn}`,
+        },
+      }
+    })
+
+    const countSameFriends = await Promise.all(
+      _users.map((user) => this.countSameFriend(id, user.id)),
+    )
+
+    _users.forEach((user, index) => {
+      user['countSameFriend'] = countSameFriends[index]
+    })
 
     return generateResponse(
       {
