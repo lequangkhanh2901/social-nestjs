@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common'
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
-import { DataSource, Like, Repository } from 'typeorm'
+import { DataSource, In, Like, Repository } from 'typeorm'
 
 import { AccessData } from 'src/core/types/common'
 import { getBearerToken } from 'src/core/helper/getToken'
@@ -202,7 +202,7 @@ export class FriendService {
       )
     }
 
-    // get relation here
+    // get relation
 
     const [friends, count] = await this.friendRepository.findAndCount({
       where: [
@@ -222,22 +222,22 @@ export class FriendService {
             id: user.id,
           },
         },
-        {
-          user_one: {
-            id: user.id,
-          },
-          user_two: {
-            username: search ? Like(`%${search}%`) : undefined,
-          },
-        },
-        {
-          user_one: {
-            username: search ? Like(`%${search}%`) : undefined,
-          },
-          user_two: {
-            id: user.id,
-          },
-        },
+        // {
+        //   user_one: {
+        //     id: user.id,
+        //   },
+        //   user_two: {
+        //     username: search ? Like(`%${search}%`) : undefined,
+        //   },
+        // },
+        // {
+        //   user_one: {
+        //     username: search ? Like(`%${search}%`) : undefined,
+        //   },
+        //   user_two: {
+        //     id: user.id,
+        //   },
+        // },
       ],
       relations: {
         user_one: {
@@ -442,5 +442,138 @@ export class FriendService {
 
   async countSameFriend(currentUserId: string, targetUserId: string) {
     return (await this.getSameFriendsId(currentUserId, targetUserId)).length
+  }
+
+  async getFriendsOfFriends({
+    authorization,
+    name,
+    skip = 0,
+    limit = 10,
+  }: {
+    authorization: string
+    limit?: number
+    skip?: number
+    name?: string
+  }) {
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+
+    const idUsers = await this.getIdsFriendOfUser(id)
+
+    if (!idUsers.length) return generateResponse({ users: [] }, { count: 0 })
+
+    const [friends, count] = await this.friendRepository.findAndCount({
+      where: [
+        {
+          user_one: {
+            id: In(idUsers),
+          },
+
+          user_two: {
+            name: name ? Like(`%${name}%`) : undefined,
+          },
+        },
+        {
+          user_one: {
+            name: name ? Like(`%${name}%`) : undefined,
+          },
+          user_two: {
+            id: In(idUsers),
+          },
+        },
+      ],
+      relations: {
+        user_one: {
+          avatarId: true,
+        },
+        user_two: {
+          avatarId: true,
+        },
+      },
+      select: {
+        user_one: {
+          id: true,
+          name: true,
+          username: true,
+          avatarId: {
+            id: true,
+            cdn: true,
+          },
+        },
+        user_two: {
+          id: true,
+          name: true,
+          username: true,
+          avatarId: {
+            id: true,
+            cdn: true,
+          },
+        },
+      },
+      take: limit,
+      skip,
+    })
+
+    const _users = friends
+      .map((friend) => {
+        if (idUsers.includes(friend.user_one.id))
+          return {
+            ...friend.user_two,
+            avatarId: {
+              cdn: `${process.env.BE_BASE_URL}${friend.user_two.avatarId.cdn}`,
+            },
+          }
+        return {
+          ...friend.user_one,
+          avatarId: {
+            cdn: `${process.env.BE_BASE_URL}${friend.user_one.avatarId.cdn}`,
+          },
+        }
+      })
+      .filter((_user) => _user.id !== id)
+
+    return generateResponse(
+      {
+        users: _users,
+      },
+      {
+        count,
+      },
+    )
+  }
+
+  async getFriendsIdOfFriendsOfUser(idUserFriends: string[]) {
+    const friends = await this.friendRepository.find({
+      where: [
+        {
+          user_one: {
+            id: In(idUserFriends),
+          },
+        },
+        {
+          user_two: {
+            id: In(idUserFriends),
+          },
+        },
+      ],
+      relations: {
+        user_one: true,
+        user_two: true,
+      },
+      select: {
+        user_one: {
+          id: true,
+        },
+        user_two: {
+          id: true,
+        },
+      },
+    })
+
+    return friends.map((friend) => {
+      if (idUserFriends.includes(friend.user_one.id)) return friend.user_two.id
+      return friend.user_one.id
+    })
   }
 }

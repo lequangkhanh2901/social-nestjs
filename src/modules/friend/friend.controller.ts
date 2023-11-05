@@ -9,8 +9,9 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { QueryDto } from 'src/core/dto'
 import { AuthGuard } from 'src/core/guards/auth.guard'
+import UsernameGuard from 'src/core/guards/username.guard'
 import { FriendService } from './friend.service'
-import { QueryFriendsDto } from './friend.dto'
+import { FriendsOfFriendsQueryDto, QueryFriendsDto } from './friend.dto'
 
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
@@ -19,6 +20,18 @@ import { QueryFriendsDto } from './friend.dto'
 export class FriendController {
   constructor(private readonly friendService: FriendService) {}
 
+  @Get('of-friends')
+  getFriendsOfFriends(
+    @Headers() headers,
+    @Query() query: FriendsOfFriendsQueryDto,
+  ) {
+    return this.friendService.getFriendsOfFriends({
+      authorization: headers.authorization,
+      ...query,
+    })
+  }
+
+  @UseGuards(UsernameGuard)
   @Get(':username')
   getFriendsUser(
     @Headers() headers,

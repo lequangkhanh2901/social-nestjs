@@ -27,6 +27,7 @@ import { QueryDto } from 'src/core/dto'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
 import { PostService } from './post.service'
 import { CreatePostDto, DeletePostDto, UpdatePostDto } from './post.dto'
+import UsernameGuard from 'src/core/guards/username.guard'
 
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
@@ -99,6 +100,7 @@ export class PostController {
     )
   }
 
+  @UseGuards(UsernameGuard)
   @Get(':username')
   getPostsByUsername(
     @Headers() headers,

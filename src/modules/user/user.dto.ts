@@ -3,6 +3,7 @@ import { Exclude, Transform } from 'class-transformer'
 import { IsEmail, IsEnum, IsNotEmpty, IsString, Length } from 'class-validator'
 import { NotMatch } from 'src/core/decorators/validation/not-match.decorator'
 import { UserRoles, UserSex, UserStatus } from 'src/core/enums/user'
+import { QueryDto } from 'src/core/dto'
 import Media from '../media/media.entity'
 
 export class CreateUserDto {
@@ -127,4 +128,11 @@ export class GetUserParams {
   @Transform(({ value }) => value.trim())
   @IsString()
   username: string
+}
+
+export class RandomUserQueryDto extends QueryDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  name: string
 }

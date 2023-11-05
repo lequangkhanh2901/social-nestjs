@@ -9,6 +9,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 
 import { AuthGuard } from 'src/core/guards/auth.guard'
+import UsernameGuard from 'src/core/guards/username.guard'
 import { QueryDto } from 'src/core/dto'
 import { MediaService } from './media.service'
 
@@ -19,6 +20,7 @@ import { MediaService } from './media.service'
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 
+  @UseGuards(UsernameGuard)
   @Get(':username/images')
   getImagesUser(
     @Param('username') username: string,
@@ -33,6 +35,7 @@ export class MediaController {
     )
   }
 
+  @UseGuards(UsernameGuard)
   @Get(':username/videos')
   getVideosUser(
     @Headers() headers,

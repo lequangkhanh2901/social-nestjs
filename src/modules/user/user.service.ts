@@ -9,7 +9,14 @@ import {
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
-import { FindManyOptions, FindOptionsSelect, In, Repository } from 'typeorm'
+import {
+  FindManyOptions,
+  FindOptionsSelect,
+  In,
+  Like,
+  Not,
+  Repository,
+} from 'typeorm'
 import { compare, hashSync } from 'bcrypt'
 
 import { saltRound } from 'src/core/constants'
@@ -19,16 +26,18 @@ import { AccessData } from 'src/core/types/common'
 import { User } from './user.entity'
 import {
   CreateUserDto,
+  RandomUserQueryDto,
   ResponseUser,
   UpdatePasswordDto,
   UpdateUserDto,
 } from './user.dto'
-import { RelationWithUser, UserStatus } from 'src/core/enums/user'
+import { RelationWithUser, UserRoles, UserStatus } from 'src/core/enums/user'
 import { MediaType } from 'src/core/enums/media'
 import Media from '../media/media.entity'
 import Album from '../album/album.entity'
 import { FriendService } from '../friend/friend.service'
 import { RequestFriendService } from '../request-friend/request-friend.service'
+import generateResponse from 'src/core/helper/generateResponse'
 
 @Injectable()
 export class UserService {
@@ -315,5 +324,63 @@ export class UserService {
   async count(options: FindManyOptions<User>) {
     // for export
     return await this.userRepository.count(options)
+  }
+
+  async getRandomUsers({
+    authorization,
+    name,
+    skip = 0,
+    limit = 10,
+  }: {
+    authorization: string
+  } & RandomUserQueryDto) {
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    const friendsId = await this.friendService.getIdsFriendOfUser(id)
+    let friendsIdOfFriends: string[] = []
+    if (friendsId.length) {
+      friendsIdOfFriends = await this.friendService.getFriendsIdOfFriendsOfUser(
+        friendsId,
+      )
+    }
+
+    const [_users, count] = await this.userRepository.findAndCount({
+      where: {
+        id: Not(In([...friendsId, ...friendsIdOfFriends])),
+        name: Like(`%${name}%`),
+        role: UserRoles.NORMAL,
+        actived: true,
+      },
+      relations: {
+        avatarId: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        avatarId: {
+          id: true,
+          cdn: true,
+        },
+      },
+      take: limit,
+      skip,
+    })
+
+    const users = _users.map((user) => ({
+      ...user,
+      avatarId: {
+        ...user.avatarId,
+        cdn: `${process.env.BE_BASE_URL}${user.avatarId.cdn}`,
+      },
+    }))
+
+    return generateResponse(
+      { users },
+      {
+        count,
+      },
+    )
   }
 }

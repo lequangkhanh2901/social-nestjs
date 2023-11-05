@@ -21,3 +21,14 @@ export class QueryFriendsDto extends QueryDto {
   @IsOptional()
   search?: string
 }
+
+export class FriendsOfFriendsQueryDto extends QueryDto {
+  @ApiProperty({
+    required: false,
+    description: 'name or username',
+  })
+  @Transform(({ value }) => value.trim())
+  @IsString()
+  @IsOptional()
+  name?: string
+}

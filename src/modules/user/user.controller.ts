@@ -7,6 +7,7 @@ import {
   ParseFilePipeBuilder,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -23,6 +24,7 @@ import { diskStorage } from 'multer'
 import { mkdirSync } from 'fs'
 
 import { AuthGuard } from 'src/core/guards/auth.guard'
+import UsernameGuard from 'src/core/guards/username.guard'
 import generateKey from 'src/core/helper/generateKey'
 import { RolesGuard } from 'src/core/guards/roles.guard'
 import { Roles } from 'src/core/decorators/roles.decorator'
@@ -32,6 +34,7 @@ import { UserService } from './user.service'
 import {
   CreateUserDto,
   GetUserParams,
+  RandomUserQueryDto,
   UpdatePasswordDto,
   UpdateUserDto,
   UploadAvatarDto,
@@ -96,6 +99,18 @@ export class UserController {
     return this.userService.uploadAvatar(headers.authorization, avatar)
   }
 
+  @ApiOperation({
+    summary: 'Get random user except friends and friends of friends',
+  })
+  @Get('random')
+  getRandomUsers(@Headers() headers, @Query() query: RandomUserQueryDto) {
+    return this.userService.getRandomUsers({
+      authorization: headers.authorization,
+      ...query,
+    })
+  }
+
+  @UseGuards(UsernameGuard)
   @Get(':username')
   getByUsername(@Headers() headers, @Param() params: GetUserParams) {
     return this.userService.getByUsername(
