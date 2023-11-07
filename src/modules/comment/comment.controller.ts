@@ -9,6 +9,7 @@ import {
   ParseFilePipeBuilder,
   ParseUUIDPipe,
   Post,
+  Put,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -19,7 +20,11 @@ import { diskStorage } from 'multer'
 import { mkdirSync } from 'fs'
 import { extname } from 'path'
 
-import { AddCommentDto, DeleteCommentDto } from './comment.dto'
+import {
+  AddCommentDto,
+  DeleteCommentDto,
+  UpdateCommentDto,
+} from './comment.dto'
 import generateKey from 'src/core/helper/generateKey'
 import { AuthGuard } from 'src/core/guards/auth.guard'
 import { CommentService } from './comment.service'
@@ -84,5 +89,46 @@ export class CommentController {
   @Delete()
   deleteComment(@Headers() headers, @Body() body: DeleteCommentDto) {
     return this.commentService.deleteComment(headers.authorization, body.id)
+  }
+
+  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('application/json')
+  @Put()
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination(req, file, callback) {
+          let path = ''
+          if (extname(file.originalname) === '.mp4') {
+            path = './public/videos/comments'
+          } else {
+            path = './public/images/comments'
+          }
+          mkdirSync(path, { recursive: true })
+          callback(null, path)
+        },
+        filename(req, file, callback) {
+          const ext = extname(file.originalname)
+          const fileName = `${Date.now()}-${generateKey(10)}${ext}`
+          callback(null, fileName)
+        },
+      }),
+    }),
+  )
+  updateComment(
+    @Headers() headers,
+    @Body() body: UpdateCommentDto,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: /(jpg|jpeg|png|mp4)/,
+        })
+        .build({
+          fileIsRequired: false,
+        }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.commentService.update(headers.authorization, body, file)
   }
 }

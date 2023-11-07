@@ -37,3 +37,33 @@ export class DeleteCommentDto {
   @IsNumber()
   id: number
 }
+
+export class UpdateCommentDto {
+  @ApiProperty()
+  @IsNumber()
+  @Allow()
+  id: number
+
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    required: false,
+  })
+  @IsOptional()
+  file?: any
+
+  @ApiProperty({
+    required: false,
+  })
+  @Transform(({ value }) => value.trim())
+  @IsString()
+  @IsOptional()
+  @Allow()
+  content?: string
+
+  @ApiProperty({
+    required: false,
+  })
+  @Allow()
+  keepMedia?: boolean
+}

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -10,13 +11,15 @@ import { extname } from 'path'
 import { unlink } from 'fs'
 
 import { getBearerToken } from 'src/core/helper/getToken'
+import generateResponse from 'src/core/helper/generateResponse'
 import { AccessData } from 'src/core/types/common'
 import { MediaType, RelationType } from 'src/core/enums/media'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
 import { PostService } from '../post/post.service'
+import { MediaService } from '../media/media.service'
 import Comment from './comment.entity'
 import { User } from '../user/user.entity'
-import { AddCommentDto } from './comment.dto'
+import { AddCommentDto, UpdateCommentDto } from './comment.dto'
 import Media from '../media/media.entity'
 
 @Injectable()
@@ -26,6 +29,7 @@ export class CommentService {
     private readonly postService: PostService,
     @InjectRepository(Comment)
     private readonly commentRepository: TreeRepository<Comment>,
+    private readonly mediaService: MediaService,
   ) {}
 
   async addComment(
@@ -195,5 +199,78 @@ export class CommentService {
       message: ResponseMessage.DELETED,
       ids: commentsTree.map((comment) => comment.id),
     }
+  }
+
+  async update(
+    authorization: string,
+    body: UpdateCommentDto,
+    file: Express.Multer.File,
+  ) {
+    if (!body.content && !file) throw new BadRequestException()
+
+    const comment = await this.commentRepository.findOne({
+      where: {
+        id: body.id,
+      },
+      relations: {
+        user: true,
+        media: true,
+      },
+      select: {
+        user: {
+          id: true,
+        },
+      },
+    })
+    if (!comment) throw new NotFoundException()
+
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    if (id !== comment.user.id) throw new ForbiddenException()
+
+    if (file) {
+      if (comment.media) {
+        unlink(
+          __dirname.replace('dist/modules/comment', 'public') +
+            comment.media.cdn,
+          () => {
+            //
+          },
+        )
+        comment.media.cdn = file.path.replace('public', '')
+        comment.media.type =
+          extname(file.filename) === '.mp4' ? MediaType.VIDEO : MediaType.IMAGE
+      } else {
+        const media = new Media()
+        media.cdn = file.path.replace('public', '')
+        media.type =
+          extname(file.filename) === '.mp4' ? MediaType.VIDEO : MediaType.IMAGE
+        media.user = comment.user
+        comment.media = media
+      }
+    } else {
+      if (!body.keepMedia && comment.media) {
+        unlink(
+          __dirname.replace('dist/modules/comment', 'public') +
+            comment.media.cdn,
+          () => {
+            //
+          },
+        )
+        this.mediaService.deleteMediasByIds([comment.media.id])
+      }
+    }
+    comment.content = body.content
+
+    await this.commentRepository.save(comment)
+
+    if (comment.media?.cdn) {
+      comment.media.cdn = `${process.env.BE_BASE_URL}${comment.media.cdn}`
+    }
+
+    return generateResponse({
+      comment,
+    })
   }
 }
