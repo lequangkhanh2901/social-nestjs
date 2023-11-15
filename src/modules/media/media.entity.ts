@@ -13,6 +13,8 @@ import { MediaType, RelationType } from 'src/core/enums/media'
 import Album from '../album/album.entity'
 import Post from '../post/post.entity'
 import Comment from '../comment/comment.entity'
+import Message from '../message/message.entity'
+import Conversation from '../conversation/conversation.entity'
 
 @Entity({
   name: 'medias',
@@ -56,6 +58,14 @@ export default class Media {
     default: RelationType.POST,
   })
   relationType: RelationType
+
+  @ManyToOne(() => Message, (message) => message.medias, {
+    onDelete: 'CASCADE',
+  })
+  message: Message
+
+  @OneToOne(() => Conversation, { onDelete: 'CASCADE' })
+  conversation: Conversation
 
   @CreateDateColumn()
   createdAt: Date

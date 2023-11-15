@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common'
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
-import { DataSource, In, Like, Not, Repository } from 'typeorm'
+import { DataSource, FindManyOptions, In, Like, Not, Repository } from 'typeorm'
 
 import { AccessData } from 'src/core/types/common'
 import { getBearerToken } from 'src/core/helper/getToken'
@@ -587,5 +587,10 @@ export class FriendService {
       if (idUserFriends.includes(friend.user_one.id)) return friend.user_two.id
       return friend.user_one.id
     })
+  }
+
+  async getFriends(options: FindManyOptions<Friend>) {
+    //for export
+    return this.friendRepository.find(options)
   }
 }

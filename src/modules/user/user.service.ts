@@ -21,8 +21,13 @@ import { compare, hashSync } from 'bcrypt'
 
 import { saltRound } from 'src/core/constants'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
-import { getBearerToken } from 'src/core/helper/getToken'
+import { MediaType } from 'src/core/enums/media'
+import { ConversationType } from 'src/core/enums/conversation'
+import { RelationWithUser, UserRoles, UserStatus } from 'src/core/enums/user'
 import { AccessData } from 'src/core/types/common'
+import { getBearerToken } from 'src/core/helper/getToken'
+import generateResponse from 'src/core/helper/generateResponse'
+
 import { User } from './user.entity'
 import {
   CreateUserDto,
@@ -31,13 +36,10 @@ import {
   UpdatePasswordDto,
   UpdateUserDto,
 } from './user.dto'
-import { RelationWithUser, UserRoles, UserStatus } from 'src/core/enums/user'
-import { MediaType } from 'src/core/enums/media'
 import Media from '../media/media.entity'
 import Album from '../album/album.entity'
 import { FriendService } from '../friend/friend.service'
 import { RequestFriendService } from '../request-friend/request-friend.service'
-import generateResponse from 'src/core/helper/generateResponse'
 
 @Injectable()
 export class UserService {
@@ -382,5 +384,19 @@ export class UserService {
         count,
       },
     )
+  }
+
+  async getConversations(uid: string) {
+    await this.userRepository.find({
+      where: {
+        id: uid,
+        conversations: {
+          type: ConversationType.DUAL,
+        },
+      },
+      relations: {
+        conversations: true,
+      },
+    })
   }
 }

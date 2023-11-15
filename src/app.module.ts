@@ -19,6 +19,9 @@ import { CommentModule } from './modules/comment/comment.module'
 import { LikeModule } from './modules/like/like.module'
 import { FriendModule } from './modules/friend/friend.module'
 import { RequestFriendModule } from './modules/request-friend/request-friend.module'
+import { ConversationModule } from './modules/conversation/conversation.module'
+import { MessageModule } from './modules/message/message.module'
+import { EventsModule } from './modules/events/events.module'
 
 @Module({
   imports: [
@@ -45,6 +48,9 @@ import { RequestFriendModule } from './modules/request-friend/request-friend.mod
     LikeModule,
     FriendModule,
     RequestFriendModule,
+    ConversationModule,
+    MessageModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -23,6 +23,7 @@ export default class Like {
 
   @ManyToOne(() => Comment, (comment) => comment.id, {
     nullable: true,
+    onDelete: 'CASCADE',
   })
   comment: Comment
 

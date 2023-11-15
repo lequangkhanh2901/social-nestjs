@@ -8,6 +8,8 @@ import Comment from 'src/modules/comment/comment.entity'
 import Like from 'src/modules/like/like.entity'
 import Friend from 'src/modules/friend/friend.entity'
 import RequestFriend from 'src/modules/request-friend/request-friend.entity'
+import Conversation from 'src/modules/conversation/conversation.entity'
+import Message from 'src/modules/message/message.entity'
 
 config()
 
@@ -18,8 +20,20 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [User, RequestFriend, Media, Album, Post, Comment, Like, Friend],
+  entities: [
+    User,
+    RequestFriend,
+    Media,
+    Album,
+    Post,
+    Comment,
+    Like,
+    Friend,
+    Conversation,
+    Message,
+  ],
   migrations: ['dist/database/migrations/*.js'],
+  // logging: true,
 }
 
 const AppDataSource = new DataSource(dataSourceOptions)

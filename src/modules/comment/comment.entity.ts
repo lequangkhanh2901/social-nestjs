@@ -39,7 +39,7 @@ export default class Comment {
   })
   content: string
 
-  @OneToMany(() => Like, (like) => like.comment)
+  @OneToMany(() => Like, (like) => like.comment, { cascade: true })
   likes: Like[]
 
   @TreeParent({

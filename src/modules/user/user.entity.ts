@@ -5,6 +5,7 @@ import {
   Entity,
   Index,
   JoinColumn,
+  ManyToMany,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -16,6 +17,8 @@ import Album from '../album/album.entity'
 import Post from '../post/post.entity'
 import Comment from '../comment/comment.entity'
 import Like from '../like/like.entity'
+import Conversation from '../conversation/conversation.entity'
+import Message from '../message/message.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -94,6 +97,15 @@ export class User {
 
   @OneToMany(() => Like, (like) => like.user)
   likes: Like[]
+
+  @ManyToMany(() => Conversation, (conversation) => conversation.users)
+  conversations: Conversation[]
+
+  @OneToMany(() => Message, (message) => message.user)
+  messages: Message[]
+
+  @ManyToMany(() => Conversation, (conservations) => conservations.deputies)
+  conversationsDeputies: Conversation[]
 
   @CreateDateColumn()
   createdAt: Date

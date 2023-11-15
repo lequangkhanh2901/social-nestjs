@@ -6,4 +6,5 @@ export enum MediaType {
 export enum RelationType {
   POST = 'POST',
   COMMENT = 'COMMENT',
+  MESSAGE = 'MESSAGE',
 }
