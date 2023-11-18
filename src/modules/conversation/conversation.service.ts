@@ -8,7 +8,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
 import { DataSource, In, Like, Not, Repository } from 'typeorm'
 
-import { ConversationType } from 'src/core/enums/conversation'
+import { ConversationRole, ConversationType } from 'src/core/enums/conversation'
 import { AccessData } from 'src/core/types/common'
 import { getBearerToken } from 'src/core/helper/getToken'
 import generateResponse from 'src/core/helper/generateResponse'
@@ -20,12 +20,15 @@ import { UserService } from '../user/user.service'
 import {
   AddUserDto,
   CreateGroupDto,
+  KickUserDto,
   UpdateConversationDto,
+  UpdateRoleDto,
 } from './conversation.dto'
 import Media from '../media/media.entity'
 import { unlink } from 'fs'
 import { SocketService } from '../socket/socket.service'
 import { FriendService } from '../friend/friend.service'
+import { MediaService } from '../media/media.service'
 
 @Injectable()
 export class ConversationService {
@@ -37,6 +40,7 @@ export class ConversationService {
     @InjectDataSource() private readonly dataSource: DataSource, // private readonly mediaService: MediaService,
     private readonly socketService: SocketService,
     private readonly friendService: FriendService,
+    private readonly mediaService: MediaService,
   ) {}
 
   async create(
@@ -112,6 +116,8 @@ export class ConversationService {
     const data = await this.dataSource.query(query)
 
     conversations.forEach((_c) => {
+      _c.unreadLastUsersId = JSON.parse(_c.unreadLastUsersId)
+
       if (_c.type === ConversationType.DUAL) {
         _c.users = _c.users.filter((_u) => _u.id !== id)
       }
@@ -297,6 +303,11 @@ export class ConversationService {
         avatar: true,
       },
       select: {
+        id: true,
+        unreadLastUsersId: true,
+        type: true,
+        name: true,
+        createdAt: true,
         users: {
           id: true,
           name: true,
@@ -334,6 +345,7 @@ export class ConversationService {
     } else {
       delete conversation.users
     }
+    conversation.unreadLastUsersId = JSON.parse(conversation.unreadLastUsersId)
 
     return conversation
   }
@@ -439,6 +451,8 @@ export class ConversationService {
     authorization: string,
     conversationId: string,
     name: string,
+    skip: number,
+    limit: number,
   ) {
     const { id }: AccessData = await this.jwtService.verifyAsync(
       getBearerToken(authorization),
@@ -507,6 +521,8 @@ export class ConversationService {
           },
         },
       },
+      take: limit,
+      skip,
     })
 
     return friends
@@ -521,13 +537,14 @@ export class ConversationService {
   }
 
   async addUser(authorization: string, body: AddUserDto) {
-    const {}: AccessData = await this.jwtService.verifyAsync(
+    const { id }: AccessData = await this.jwtService.verifyAsync(
       getBearerToken(authorization),
     )
 
     const conservation = await this.conversationRepository.findOne({
       where: {
         id: body.id,
+        type: ConversationType.GROUP,
       },
       relations: {
         users: true,
@@ -539,10 +556,15 @@ export class ConversationService {
       },
     })
 
-    if (conservation.users.some((user) => user.id === body.userId))
+    if (!conservation) throw new NotFoundException()
+
+    if (
+      !conservation.users.some((user) => user.id === id) ||
+      conservation.users.some((user) => user.id === body.userId)
+    )
       throw new BadRequestException()
 
-    const user = (await this.userService.getUsersOption({
+    const [user] = (await this.userService.getUsersOption({
       options: {
         where: {
           id: body.userId,
@@ -551,15 +573,216 @@ export class ConversationService {
           id: true,
         },
       },
-    })) as User[]
-    if (!user[0]) throw new NotFoundException()
+    })) as [User]
+    if (!user) throw new NotFoundException()
 
-    conservation.users.push(user[0])
+    conservation.users.push(user)
 
     await this.conversationRepository.save(conservation)
 
+    this.socketService.socket.emit(`new-conversation-${body.userId}`)
+    this.socketService.socket.emit(`new-member-conversation-${conservation.id}`)
     return {
       user,
     }
+  }
+
+  async kickUser(authorization: string, body: KickUserDto) {
+    const conservation = await this.conversationRepository.findOne({
+      where: {
+        id: body.id,
+      },
+      relations: {
+        chief: true,
+        users: true,
+        deputies: true,
+      },
+      select: {
+        chief: {
+          id: true,
+        },
+        users: {
+          id: true,
+        },
+        deputies: {
+          id: true,
+        },
+      },
+    })
+    if (!conservation) throw new NotFoundException()
+
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    if (!conservation.users.some((user) => user.id === body.userId))
+      throw new NotFoundException()
+
+    if (
+      body.userId === conservation.chief.id ||
+      (conservation.deputies.some((user) => user.id === id) &&
+        conservation.deputies.some((user) => user.id === body.userId)) ||
+      (id !== conservation.chief.id &&
+        !conservation.deputies.some((user) => user.id === id))
+    )
+      throw new ForbiddenException()
+
+    if (conservation.deputies.some((user) => user.id === body.userId)) {
+      conservation.users = conservation.deputies.filter(
+        (_user) => _user.id !== body.userId,
+      )
+    }
+    conservation.users = conservation.users.filter(
+      (_user) => _user.id !== body.userId,
+    )
+
+    await this.conversationRepository.save(conservation)
+    return conservation
+  }
+
+  async quitGroup(authorization: string, conservationId: string) {
+    const conversation = await this.conversationRepository.findOne({
+      where: {
+        id: conservationId,
+      },
+      relations: {
+        chief: true,
+        users: true,
+        deputies: true,
+      },
+      select: {
+        chief: {
+          id: true,
+        },
+        users: {
+          id: true,
+        },
+        deputies: {
+          id: true,
+        },
+      },
+    })
+    if (!conversation) throw new NotFoundException()
+
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    if (!conversation.users.some((user) => user.id === id))
+      throw new ForbiddenException()
+
+    if (conversation.chief.id === id) return 'cancel'
+
+    conversation.users = conversation.users.filter((user) => user.id !== id)
+    if (conversation.deputies.some((user) => user.id === id))
+      conversation.deputies = conversation.deputies.filter(
+        (user) => user.id !== id,
+      )
+
+    await this.conversationRepository.save(conversation)
+    this.socketService.socket.emit(`quit-conversation-${conservationId}`, id)
+
+    return conversation
+  }
+
+  async getMedias(
+    authorization: string,
+    conservationId: string,
+    skip: number,
+    limit: number,
+  ) {
+    const conversation = await this.conversationRepository.findOne({
+      where: {
+        id: conservationId,
+      },
+      relations: {
+        messages: true,
+        users: true,
+      },
+
+      select: {
+        id: true,
+        users: {
+          id: true,
+        },
+        messages: {
+          id: true,
+        },
+      },
+    })
+
+    if (!conversation) throw new NotFoundException()
+
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    if (!conversation.users.some((user) => user.id === id))
+      throw new ForbiddenException()
+
+    const media = await this.mediaService.getMediasByMessageIds(
+      conversation.messages.map((message) => message.id),
+      skip,
+      limit,
+    )
+
+    return media
+  }
+
+  async updateRole(authorization: string, body: UpdateRoleDto) {
+    const conversation = await this.conversationRepository.findOne({
+      where: {
+        id: body.conversationId,
+      },
+      relations: {
+        chief: true,
+        users: true,
+        deputies: true,
+      },
+      select: {
+        id: true,
+        chief: {
+          id: true,
+        },
+        deputies: {
+          id: true,
+        },
+        users: {
+          id: true,
+        },
+      },
+    })
+
+    if (!conversation) throw new NotFoundException()
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    if (id !== conversation.chief.id) throw new ForbiddenException()
+    if (!conversation.users.some((user) => user.id === body.userId))
+      throw new BadRequestException()
+
+    if (body.role === ConversationRole.VICE_CHIEF) {
+      if (conversation.deputies.some((user) => user.id === body.userId))
+        throw new BadRequestException()
+
+      conversation.deputies.push({ id: body.userId } as User)
+    }
+
+    if (body.role === ConversationRole.MEMBER) {
+      if (!conversation.deputies.some((user) => user.id === body.userId))
+        throw new BadRequestException()
+      conversation.deputies = conversation.deputies.filter(
+        (user) => user.id !== body.userId,
+      )
+    }
+
+    await this.conversationRepository.save(conversation)
+
+    return conversation
+  }
+
+  async readLastGroup(authorization: string, conservationId: string) {
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    await this.updateLastSeenGroup('READ', conservationId, id)
+    return
   }
 }

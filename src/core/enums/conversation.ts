@@ -19,3 +19,9 @@ export enum MessageViewSatus {
   RECEIVED = 'RECEIVED',
   VIEWED = 'VIEWED',
 }
+
+export enum ConversationRole {
+  CHIEF = 'CHIEF',
+  VICE_CHIEF = 'VICE_CHIEF',
+  MEMBER = 'MEMBER',
+}

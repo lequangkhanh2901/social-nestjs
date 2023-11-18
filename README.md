@@ -12,6 +12,16 @@
 $ npm install
 ```
 
+### Peer
+
+```bash
+# install
+$ npm i -g peer
+
+# start peer server
+$ peerjs --port <PORT>
+```
+
 ### Running the app
 
 ```bash

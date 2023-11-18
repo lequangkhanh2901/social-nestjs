@@ -5,11 +5,17 @@ import { ConversationService } from './conversation.service'
 import Conversation from './conversation.entity'
 import { UserModule } from '../user/user.module'
 import { FriendModule } from '../friend/friend.module'
+import { MediaModule } from '../media/media.module'
 
 @Module({
   controllers: [ConversationController],
   providers: [ConversationService],
-  imports: [TypeOrmModule.forFeature([Conversation]), UserModule, FriendModule],
+  imports: [
+    TypeOrmModule.forFeature([Conversation]),
+    UserModule,
+    FriendModule,
+    MediaModule,
+  ],
   exports: [ConversationService],
 })
 export class ConversationModule {}

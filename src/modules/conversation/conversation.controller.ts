@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
@@ -21,12 +22,15 @@ import { extname } from 'path'
 
 import { AuthGuard } from 'src/core/guards/auth.guard'
 import generateKey from 'src/core/helper/generateKey'
+import { QueryDto } from 'src/core/dto'
 import { ConversationService } from './conversation.service'
 import {
   AddUserDto,
   CreateGroupDto,
   FindForInviteQuery,
+  KickUserDto,
   UpdateConversationDto,
+  UpdateRoleDto,
 } from './conversation.dto'
 
 @UseGuards(AuthGuard)
@@ -164,5 +168,51 @@ export class ConversationController {
   @Post('add-user')
   addUser(@Headers() headers, @Body() body: AddUserDto) {
     return this.conversationService.addUser(headers.authorization, body)
+  }
+
+  @Delete('kick-user')
+  kickUser(@Headers() headers, @Body() body: KickUserDto) {
+    return this.conversationService.kickUser(headers.authorization, body)
+  }
+
+  @Put(':conversationId/quit-group')
+  quitGroup(
+    @Headers() headers,
+    @Param('conversationId', ParseUUIDPipe) conversationId: string,
+  ) {
+    return this.conversationService.quitGroup(
+      headers.authorization,
+      conversationId,
+    )
+  }
+
+  @Put('update-role')
+  updateRole(@Headers() headers, @Body() body: UpdateRoleDto) {
+    return this.conversationService.updateRole(headers.authorization, body)
+  }
+
+  @Put(':conversationId/read-last-group')
+  readLastGroup(
+    @Headers() headers,
+    @Param('conversationId', ParseUUIDPipe) conversationId: string,
+  ) {
+    return this.conversationService.readLastGroup(
+      headers.authorization,
+      conversationId,
+    )
+  }
+
+  @Get(':conversationId/medias')
+  getMedias(
+    @Headers() headers,
+    @Param('conversationId', ParseUUIDPipe) conversationId: string,
+    @Query() query: QueryDto,
+  ) {
+    return this.conversationService.getMedias(
+      headers.authorization,
+      conversationId,
+      query.skip || 0,
+      query.limit || 10,
+    )
   }
 }

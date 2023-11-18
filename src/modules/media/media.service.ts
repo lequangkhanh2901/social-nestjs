@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
 import Media from './media.entity'
-import { FindOptionsWhere, Repository } from 'typeorm'
+import { FindOptionsWhere, In, Repository } from 'typeorm'
 
 import { AccessData } from 'src/core/types/common'
 import { getBearerToken } from 'src/core/helper/getToken'
@@ -192,5 +192,32 @@ export class MediaService {
   async deleteMediasByIds(ids: string[]) {
     await this.mediaRepository.delete(ids)
     return
+  }
+
+  async getMediasByMessageIds(
+    messageId: string[],
+    skip: number,
+    limit: number,
+  ) {
+    const [medias, count] = await this.mediaRepository.findAndCount({
+      where: {
+        message: {
+          id: In(messageId),
+        },
+      },
+      skip,
+      take: limit,
+      order: {
+        createdAt: 'DESC',
+      },
+    })
+
+    return {
+      medias: medias.map((media) => {
+        media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`
+        return media
+      }),
+      count,
+    }
   }
 }

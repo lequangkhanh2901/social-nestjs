@@ -1,5 +1,11 @@
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets'
-import { Server } from 'socket.io'
+import {
+  ConnectedSocket,
+  MessageBody,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets'
+import { Server, Socket } from 'socket.io'
 import { SocketService } from '../socket/socket.service'
 
 @WebSocketGateway(4001, {
@@ -17,30 +23,37 @@ export class EventsGateway {
     this.socketService.socket = server
   }
 
-  // @SubscribeMessage('events')
-  // findAll(@MessageBody() data: any): Observable<WsResponse<number>> {
-  //   return from([1, 2, 3]).pipe(
-  //     map((item) => ({ event: 'events', data: item })),
-  //   )
-  // }
+  @SubscribeMessage('start-call')
+  startCall(@MessageBody() data: any) {
+    this.server.emit(`want-to-call-${data.conversationId}`)
+  }
 
-  // @SubscribeMessage('identity')
-  // async identity(@MessageBody() data: number): Promise<number> {
-  //   return data
-  // }
+  @SubscribeMessage('accept-call')
+  acceotCall(@MessageBody() conversationId: string) {
+    this.server.emit(`user-accepted-${conversationId}`)
+  }
 
-  // @SubscribeMessage('hello')
-  // handle(@MessageBody() data: any) {
-  //   console.log(data)
+  @SubscribeMessage('call-ended')
+  callEnded(@MessageBody() conversationId: string) {
+    this.server.emit(`call-ended-${conversationId}`)
+  }
 
-  //   this.server.emit(`message-${data.key}`, 'hihihi')
+  @SubscribeMessage('join-room')
+  joinRoom(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() { conversationId, userId },
+  ) {
+    this.server.emit(`call-${conversationId}`, userId)
+    socket.join(conversationId)
+    setTimeout(() => {
+      socket.broadcast
+        .to(conversationId)
+        .emit(`user-connected-${conversationId}`, userId)
+    }, 1000)
 
-  //   this.some()
-
-  //   return 'Hello you'
-  // }
-
-  // some() {
-  //   this.server.emit('hi', 'hi from some')
-  // }
+    return {
+      event: 'created',
+      room: conversationId,
+    }
+  }
 }

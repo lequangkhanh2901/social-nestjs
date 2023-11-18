@@ -8,7 +8,10 @@ import {
   Length,
 } from 'class-validator'
 import { QueryDto } from 'src/core/dto'
-import { ConversationStatus } from 'src/core/enums/conversation'
+import {
+  ConversationRole,
+  ConversationStatus,
+} from 'src/core/enums/conversation'
 
 export class CreateGroupDto {
   @ApiProperty({
@@ -77,4 +80,28 @@ export class AddUserDto {
   @ApiProperty()
   @IsUUID()
   userId: string
+}
+
+export class KickUserDto extends AddUserDto {}
+
+export class UpdateRoleDto {
+  @ApiProperty()
+  @IsUUID()
+  conversationId: string
+
+  @ApiProperty()
+  @IsUUID()
+  userId: string
+
+  @ApiProperty({
+    enum: Object.keys(ConversationRole).filter(
+      (role) => role !== ConversationRole.CHIEF,
+    ),
+  })
+  @IsEnum(
+    Object.keys(ConversationRole).filter(
+      (role) => role !== ConversationRole.CHIEF,
+    ),
+  )
+  role: ConversationRole.MEMBER | ConversationRole.VICE_CHIEF
 }
