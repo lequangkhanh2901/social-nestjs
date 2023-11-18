@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
 import Media from './media.entity'
@@ -18,6 +23,8 @@ export class MediaService {
     private readonly jwtService: JwtService,
     @InjectRepository(Media)
     private readonly mediaRepository: Repository<Media>,
+
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
   ) {}
 

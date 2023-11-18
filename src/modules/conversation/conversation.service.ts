@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common'
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
 import { JwtService } from '@nestjs/jwt'
@@ -36,10 +38,18 @@ export class ConversationService {
     @InjectRepository(Conversation)
     private readonly conversationRepository: Repository<Conversation>,
     private readonly jwtService: JwtService,
+
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
-    @InjectDataSource() private readonly dataSource: DataSource, // private readonly mediaService: MediaService,
+
+    @InjectDataSource() private readonly dataSource: DataSource,
+
     private readonly socketService: SocketService,
+
+    @Inject(forwardRef(() => FriendService))
     private readonly friendService: FriendService,
+
+    @Inject(forwardRef(() => MediaService))
     private readonly mediaService: MediaService,
   ) {}
 
@@ -75,6 +85,11 @@ export class ConversationService {
         id: true,
       },
     })
+
+    if (_conversations.length === 0)
+      return generateResponse({
+        conversations: [],
+      })
 
     //get data conversations
     const conversations = await this.conversationRepository.find({

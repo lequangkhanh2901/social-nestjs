@@ -1,10 +1,12 @@
 import {
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
+  forwardRef,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { compare, hashSync } from 'bcrypt'
@@ -22,8 +24,12 @@ import generateKey from 'src/core/helper/generateKey'
 @Injectable()
 export class AuthService {
   constructor(
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
+
     private readonly jwtService: JwtService,
+
+    @Inject(forwardRef(() => MailService))
     private readonly mailService: MailService,
   ) {}
 

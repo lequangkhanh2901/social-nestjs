@@ -1,7 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
 import {
+  FindManyOptions,
   FindOptionsRelations,
   FindOptionsSelect,
   FindOptionsWhere,
@@ -25,6 +31,7 @@ import { FriendService } from '../friend/friend.service'
 import { CreatePostDto, ResponseUserPost, UpdatePostDto } from './post.dto'
 import { UserService } from '../user/user.service'
 import { MediaService } from '../media/media.service'
+import { NotificationService } from '../notification/notification.service'
 
 @Injectable()
 export class PostService {
@@ -32,9 +39,18 @@ export class PostService {
     private readonly jwtService: JwtService,
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+
+    @Inject(forwardRef(() => FriendService))
     private readonly friendService: FriendService,
+
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
+
+    @Inject(forwardRef(() => MediaService))
     private readonly mediaService: MediaService,
+
+    @Inject(forwardRef(() => NotificationService))
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createPost(
@@ -62,6 +78,9 @@ export class PostService {
       }) || []
     post.medias = listMedia
     const data = await this.postRepository.save(post)
+    if (body.type === PostType.ONLY_FRIEND || body.type === PostType.PUBLIC) {
+      this.notificationService.newPostFromFriend(id, post.id)
+    }
     const getPost = await this.postRepository.findOne({
       where: {
         id: data.id,
@@ -436,5 +455,10 @@ export class PostService {
       media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`
     })
     return post
+  }
+
+  async getPostOptions({ options }: { options: FindManyOptions<Post> }) {
+    //export
+    return await this.postRepository.find(options)
   }
 }

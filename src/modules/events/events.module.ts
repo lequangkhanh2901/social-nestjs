@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common'
+import { Global, Module, forwardRef } from '@nestjs/common'
 import { EventsGateway } from './events.gateway'
 import { SocketModule } from '../socket/socket.module'
 
@@ -6,6 +6,6 @@ import { SocketModule } from '../socket/socket.module'
 @Module({
   providers: [EventsGateway],
   exports: [EventsGateway],
-  imports: [SocketModule],
+  imports: [forwardRef(() => SocketModule)],
 })
 export class EventsModule {}

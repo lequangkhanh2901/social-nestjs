@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ConversationController } from './conversation.controller'
 import { ConversationService } from './conversation.service'
@@ -12,9 +12,9 @@ import { MediaModule } from '../media/media.module'
   providers: [ConversationService],
   imports: [
     TypeOrmModule.forFeature([Conversation]),
-    UserModule,
-    FriendModule,
-    MediaModule,
+    forwardRef(() => UserModule),
+    forwardRef(() => FriendModule),
+    forwardRef(() => MediaModule),
   ],
   exports: [ConversationService],
 })

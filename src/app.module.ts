@@ -22,6 +22,7 @@ import { RequestFriendModule } from './modules/request-friend/request-friend.mod
 import { ConversationModule } from './modules/conversation/conversation.module'
 import { MessageModule } from './modules/message/message.module'
 import { EventsModule } from './modules/events/events.module'
+import { NotificationModule } from './modules/notification/notification.module'
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { EventsModule } from './modules/events/events.module'
     ConversationModule,
     MessageModule,
     EventsModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

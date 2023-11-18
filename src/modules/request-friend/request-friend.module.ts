@@ -11,7 +11,7 @@ import { UserModule } from '../user/user.module'
   providers: [RequestFriendService],
   imports: [
     TypeOrmModule.forFeature([RequestFriend]),
-    FriendModule,
+    forwardRef(() => FriendModule),
     forwardRef(() => UserModule),
   ],
   exports: [RequestFriendService],

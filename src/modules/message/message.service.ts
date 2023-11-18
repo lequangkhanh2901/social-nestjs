@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -26,7 +28,9 @@ import { SocketService } from '../socket/socket.service'
 @Injectable()
 export class MessageService {
   constructor(
+    @Inject(forwardRef(() => ConversationService))
     private readonly conversationService: ConversationService,
+
     private readonly jwtService: JwtService,
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable, forwardRef } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
 import { LikeType } from 'src/core/enums/common'
@@ -9,6 +9,7 @@ import { User } from '../user/user.entity'
 import Post from '../post/post.entity'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
 import Comment from '../comment/comment.entity'
+import { NotificationService } from '../notification/notification.service'
 
 @Injectable()
 export class LikeService {
@@ -16,6 +17,8 @@ export class LikeService {
     private readonly jwtService: JwtService,
     @InjectRepository(Like)
     private readonly likeRepository: Repository<Like>,
+    @Inject(forwardRef(() => NotificationService))
+    private readonly notificationService: NotificationService,
   ) {}
 
   async like(authorization: string, id: string | number, type: LikeType) {
@@ -30,13 +33,13 @@ export class LikeService {
   }
 
   async likePost(idUser: string, idPost: string) {
-    const user = new User()
-    user.id = idUser
-    const post = new Post()
-    post.id = idPost
     const like = await this.likeRepository.findOneBy({
-      user,
-      post,
+      user: {
+        id: idUser,
+      },
+      post: {
+        id: idPost,
+      },
     })
 
     if (like) {
@@ -46,10 +49,15 @@ export class LikeService {
       }
     } else {
       const like = new Like()
+      const user = new User()
+      const post = new Post()
+      user.id = idUser
+      post.id = idPost
       like.user = user
       like.post = post
 
       await this.likeRepository.save(like)
+      this.notificationService.likePost(idPost, idUser)
       return {
         message: ResponseMessage.LIKED,
       }
@@ -86,6 +94,7 @@ export class LikeService {
     like.comment = comment
 
     await this.likeRepository.save(like)
+    this.notificationService.likeComment(idComment as number, idUser)
     return {
       message: ResponseMessage.LIKED,
     }

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { MessageController } from './message.controller'
@@ -9,6 +9,9 @@ import Message from './message.entity'
 @Module({
   controllers: [MessageController],
   providers: [MessageService],
-  imports: [TypeOrmModule.forFeature([Message]), ConversationModule],
+  imports: [
+    TypeOrmModule.forFeature([Message]),
+    forwardRef(() => ConversationModule),
+  ],
 })
 export class MessageModule {}

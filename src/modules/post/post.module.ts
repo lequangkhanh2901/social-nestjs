@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { PostController } from './post.controller'
 import { PostService } from './post.service'
 import { User } from '../user/user.entity'
@@ -13,9 +13,9 @@ import { MediaModule } from '../media/media.module'
   providers: [PostService],
   imports: [
     TypeOrmModule.forFeature([User, Post]),
-    FriendModule,
-    UserModule,
-    MediaModule,
+    forwardRef(() => FriendModule),
+    forwardRef(() => UserModule),
+    forwardRef(() => MediaModule),
   ],
   exports: [PostService],
 })

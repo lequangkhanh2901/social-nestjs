@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { MediaService } from './media.service'
@@ -9,7 +9,7 @@ import { UserModule } from '../user/user.module'
 @Module({
   providers: [MediaService],
   controllers: [MediaController],
-  imports: [TypeOrmModule.forFeature([Media]), UserModule],
+  imports: [TypeOrmModule.forFeature([Media]), forwardRef(() => UserModule)],
   exports: [MediaService],
 })
 export class MediaModule {}

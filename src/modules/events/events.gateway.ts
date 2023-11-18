@@ -7,6 +7,7 @@ import {
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
 import { SocketService } from '../socket/socket.service'
+import { Inject, forwardRef } from '@nestjs/common'
 
 @WebSocketGateway(4001, {
   cors: {
@@ -14,7 +15,10 @@ import { SocketService } from '../socket/socket.service'
   },
 })
 export class EventsGateway {
-  constructor(private socketService: SocketService) {}
+  constructor(
+    @Inject(forwardRef(() => SocketService))
+    private socketService: SocketService,
+  ) {}
 
   @WebSocketServer()
   server: Server

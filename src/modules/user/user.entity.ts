@@ -19,6 +19,7 @@ import Comment from '../comment/comment.entity'
 import Like from '../like/like.entity'
 import Conversation from '../conversation/conversation.entity'
 import Message from '../message/message.entity'
+import Notification from '../notification/notification.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -106,6 +107,12 @@ export class User {
 
   @ManyToMany(() => Conversation, (conservations) => conservations.deputies)
   conversationsDeputies: Conversation[]
+
+  @OneToMany(() => Notification, (notification) => notification.user)
+  notifications: Notification[]
+
+  @OneToMany(() => Notification, (notification) => notification.userTaget)
+  notificationTargets: Notification[]
 
   @CreateDateColumn()
   createdAt: Date

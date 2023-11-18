@@ -19,6 +19,7 @@ import { FriendService } from '../friend/friend.service'
 import { UserService } from '../user/user.service'
 import { User } from '../user/user.entity'
 import RequestFriend from './request-friend.entity'
+import { NotificationService } from '../notification/notification.service'
 
 @Injectable()
 export class RequestFriendService {
@@ -26,9 +27,15 @@ export class RequestFriendService {
     @InjectRepository(RequestFriend)
     private readonly requestFriendRepository: Repository<RequestFriend>,
     private readonly jwtService: JwtService,
+
+    @Inject(forwardRef(() => FriendService))
     private readonly friendService: FriendService,
+
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
+
+    @Inject(forwardRef(() => NotificationService))
+    private readonly notificationService: NotificationService,
   ) {}
 
   async request(token: string, uid: string) {
@@ -78,6 +85,7 @@ export class RequestFriendService {
     request.user_target = targetUser
 
     const response = await this.requestFriendRepository.save(request)
+    this.notificationService.newRequestFriend(uid, data.id)
     return response
   }
 
@@ -201,6 +209,8 @@ export class RequestFriendService {
       this.friendService.add(request.user.id, request.user_target.id),
       this.requestFriendRepository.remove(request),
     ])
+
+    this.notificationService.acceptedRequestFriend(userId, id)
 
     return {
       message: ResponseMessage.ACCEPTED,

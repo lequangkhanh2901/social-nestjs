@@ -36,12 +36,20 @@ export class FriendService {
     const friend = await this.friendRepository.findOne({
       where: [
         {
-          user_one: user1,
-          user_two: user2,
+          user_one: {
+            id: uid1,
+          },
+          user_two: {
+            id: uid2,
+          },
         },
         {
-          user_one: user2,
-          user_two: user1,
+          user_one: {
+            id: uid2,
+          },
+          user_two: {
+            id: uid1,
+          },
         },
       ],
     })

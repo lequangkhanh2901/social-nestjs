@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -21,15 +23,24 @@ import Comment from './comment.entity'
 import { User } from '../user/user.entity'
 import { AddCommentDto, UpdateCommentDto } from './comment.dto'
 import Media from '../media/media.entity'
+import { NotificationService } from '../notification/notification.service'
 
 @Injectable()
 export class CommentService {
   constructor(
     private readonly jwtService: JwtService,
+
+    @Inject(forwardRef(() => PostService))
     private readonly postService: PostService,
+
     @InjectRepository(Comment)
     private readonly commentRepository: TreeRepository<Comment>,
+
+    @Inject(forwardRef(() => MediaService))
     private readonly mediaService: MediaService,
+
+    @Inject(forwardRef(() => NotificationService))
+    private readonly notificationService: NotificationService,
   ) {}
 
   async addComment(
@@ -82,6 +93,8 @@ export class CommentService {
     const response = await this.commentRepository.save(comment)
     if (response.media)
       response.media.cdn = `${process.env.BE_BASE_URL}${response.media.cdn}`
+
+    this.notificationService.commentPost(post.id, id)
 
     return response
   }

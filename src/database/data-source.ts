@@ -10,6 +10,7 @@ import Friend from 'src/modules/friend/friend.entity'
 import RequestFriend from 'src/modules/request-friend/request-friend.entity'
 import Conversation from 'src/modules/conversation/conversation.entity'
 import Message from 'src/modules/message/message.entity'
+import Notification from 'src/modules/notification/notification.entity'
 
 config()
 
@@ -31,6 +32,7 @@ export const dataSourceOptions: DataSourceOptions = {
     Friend,
     Conversation,
     Message,
+    Notification,
   ],
   migrations: ['dist/database/migrations/*.js'],
   // logging: true,
