@@ -39,7 +39,7 @@ export class MessageController {
   @UseInterceptors(
     FilesInterceptor('files', undefined, {
       fileFilter(req, file, callback) {
-        const filterType = /(jpg|jpeg|png|mp4)/
+        const filterType = /(jpg|jpeg|png|mp4|pdf)/
         if (!extname(file.originalname).match(filterType)) {
           return callback(
             new HttpException(
@@ -54,7 +54,9 @@ export class MessageController {
       storage: diskStorage({
         destination(req, file, callback) {
           let path = ''
-          if (extname(file.originalname) === '.mp4') {
+          if (extname(file.originalname) === '.pdf') {
+            path = './public/other/messages'
+          } else if (extname(file.originalname) === '.mp4') {
             path = './public/videos/messages'
           } else {
             path = './public/images/messages'
@@ -79,7 +81,7 @@ export class MessageController {
     @UploadedFiles(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
-          fileType: /(jpg|jpeg|png|mp4)/,
+          fileType: /(jpg|jpeg|png|mp4|pdf)/,
         })
         .build({
           fileIsRequired: false,

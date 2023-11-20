@@ -1,4 +1,7 @@
 import {
+  AfterLoad,
+  BeforeInsert,
+  BeforeUpdate,
   Column,
   CreateDateColumn,
   Entity,
@@ -34,6 +37,12 @@ export default class Post {
   })
   type: PostType
 
+  @Column({
+    type: 'json',
+    nullable: true,
+  })
+  userIds: string[]
+
   @OneToMany(() => Comment, (comment) => comment.post, {
     cascade: true,
   })
@@ -54,4 +63,19 @@ export default class Post {
 
   @UpdateDateColumn()
   updatedAt: Date
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  trandformExclude() {
+    if (this.userIds) {
+      this.userIds = JSON.stringify(this.userIds) as any
+    }
+  }
+
+  @AfterLoad()
+  restoreExclude() {
+    if (this.userIds) {
+      this.userIds = JSON.parse(this.userIds as unknown as string)
+    }
+  }
 }

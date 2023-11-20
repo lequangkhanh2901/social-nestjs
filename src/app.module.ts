@@ -23,6 +23,7 @@ import { ConversationModule } from './modules/conversation/conversation.module'
 import { MessageModule } from './modules/message/message.module'
 import { EventsModule } from './modules/events/events.module'
 import { NotificationModule } from './modules/notification/notification.module'
+import { ReportModule } from './modules/report/report.module'
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { NotificationModule } from './modules/notification/notification.module'
     MessageModule,
     EventsModule,
     NotificationModule,
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [

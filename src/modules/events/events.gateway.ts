@@ -42,6 +42,16 @@ export class EventsGateway {
     this.server.emit(`call-ended-${conversationId}`)
   }
 
+  @SubscribeMessage('cancel-call')
+  cancelCall(@MessageBody() conversationId: string) {
+    this.server.emit(`cancel-call-${conversationId}`)
+  }
+
+  @SubscribeMessage('not-accept-call')
+  notAcceptCall(@MessageBody() conversationId: string) {
+    this.server.emit(`not-accept-call-${conversationId}`)
+  }
+
   @SubscribeMessage('join-room')
   joinRoom(
     @ConnectedSocket() socket: Socket,

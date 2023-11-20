@@ -65,6 +65,12 @@ export class PostService {
     post.user = user
     post.content = body.content || ''
     post.type = body.type
+    if (
+      body.type === PostType.CUSTOM_EXCLUDE ||
+      body.type === PostType.CUSTOM_ONLY
+    ) {
+      post.userIds = body.userIds
+    }
     const listMedia =
       medias?.map((file) => {
         const media = new Media()
@@ -78,8 +84,13 @@ export class PostService {
       }) || []
     post.medias = listMedia
     const data = await this.postRepository.save(post)
-    if (body.type === PostType.ONLY_FRIEND || body.type === PostType.PUBLIC) {
-      this.notificationService.newPostFromFriend(id, post.id)
+    if (body.type !== PostType.PRIVATE) {
+      this.notificationService.newPostFromFriend(
+        id,
+        post.id,
+        post.type,
+        post.userIds,
+      )
     }
     const getPost = await this.postRepository.findOne({
       where: {
@@ -167,6 +178,77 @@ export class PostService {
         return postData
       }),
     }
+  }
+
+  async getPost(authorization: string, postId: string) {
+    const post = await this.postRepository.findOne({
+      where: {
+        id: postId,
+      },
+      relations: {
+        user: {
+          avatarId: true,
+        },
+        likes: {
+          user: true,
+        },
+        comments: true,
+        medias: true,
+      },
+      select: {
+        user: {
+          id: true,
+          name: true,
+          username: true,
+          avatarId: {
+            id: true,
+            cdn: true,
+          },
+        },
+        likes: {
+          id: true,
+          user: {
+            id: true,
+          },
+        },
+        comments: {
+          id: true,
+        },
+        medias: {
+          id: true,
+          cdn: true,
+          type: true,
+        },
+      },
+    })
+
+    if (!post) throw new NotFoundException()
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+
+    if (post.type !== PostType.PUBLIC && id !== post.user.id) {
+      if (post.type === PostType.PRIVATE) throw new NotFoundException()
+      const relation = await this.userService.getRelation(id, post.user.id)
+      if (post.type === PostType.ONLY_FRIEND) {
+        if (relation !== RelationWithUser.FRIEND) throw new NotFoundException()
+      }
+    }
+
+    post.user.avatarId.cdn = `${process.env.BE_BASE_URL}${post.user.avatarId.cdn}`
+
+    post.medias.forEach((media) => {
+      media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`
+    })
+
+    post['likeData'] = {
+      total: post.likes.length,
+      isLiked: post.likes.some((like) => like.user.id === id),
+    }
+    post['totalComment'] = post.comments.length
+    delete post.likes
+    delete post.comments
+    return post
   }
 
   async deletePost(authorization: string, idPost: string) {
@@ -298,20 +380,12 @@ export class PostService {
 
       let whereOptions: FindOptionsWhere<Post>[] | FindOptionsWhere<Post>
       if (relation === RelationWithUser.FRIEND) {
-        whereOptions = [
-          {
-            user: {
-              id: user.id,
-            },
-            type: PostType.PUBLIC,
+        whereOptions = {
+          user: {
+            id: user.id,
           },
-          {
-            user: {
-              id: user.id,
-            },
-            type: PostType.ONLY_FRIEND,
-          },
-        ]
+          type: Not(PostType.PRIVATE),
+        }
       } else {
         whereOptions = {
           user: {

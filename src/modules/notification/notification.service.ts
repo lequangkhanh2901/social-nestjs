@@ -13,6 +13,7 @@ import { getBearerToken } from 'src/core/helper/getToken'
 import { AccessData } from 'src/core/types/common'
 import { NotificationType } from 'src/core/enums/notification'
 import generateResponse from 'src/core/helper/generateResponse'
+import { PostType } from 'src/core/enums/post'
 
 import Notification from './notification.entity'
 import { User } from '../user/user.entity'
@@ -418,8 +419,17 @@ export class NotificationService {
   async newPostFromFriend(
     userId: string, // post owner
     postId: string,
+    type: PostType,
+    userIds: string[],
   ) {
-    const ids = await this.friendService.getIdsFriendOfUser(userId)
+    const _ids = await this.friendService.getIdsFriendOfUser(userId)
+    const ids = (() => {
+      if (type === PostType.PUBLIC || type === PostType.ONLY_FRIEND) return _ids
+      if (type === PostType.CUSTOM_ONLY) {
+        return _ids.filter((id) => userIds.includes(id))
+      }
+      return _ids.filter((id) => !userIds.includes(id))
+    })()
     if (ids.length === 0) return
     const notifications = ids.map((id) => {
       const notification = new Notification()

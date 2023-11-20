@@ -8,6 +8,7 @@ import {
   HttpStatus,
   Param,
   ParseFilePipeBuilder,
+  ParseUUIDPipe,
   Post,
   Put,
   Query,
@@ -98,6 +99,11 @@ export class PostController {
       query.limit,
       query.skip,
     )
+  }
+
+  @Get(':postId/get')
+  getPost(@Headers() headers, @Param('postId', ParseUUIDPipe) postId: string) {
+    return this.postService.getPost(headers.authorization, postId)
   }
 
   @UseGuards(UsernameGuard)

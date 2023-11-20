@@ -77,6 +77,8 @@ export class MessageService {
           media.type =
             extname(file.filename) === '.mp4'
               ? MediaType.VIDEO
+              : extname(file.filename) === '.pdf'
+              ? MediaType.PDF
               : MediaType.IMAGE
           media.relationType = RelationType.MESSAGE
           return media
@@ -107,7 +109,11 @@ export class MessageService {
         media.cdn = file.path.replace('public', '')
         media.user = { id } as User
         media.type =
-          extname(file.filename) === '.mp4' ? MediaType.VIDEO : MediaType.IMAGE
+          extname(file.filename) === '.mp4'
+            ? MediaType.VIDEO
+            : extname(file.filename) === '.pdf'
+            ? MediaType.PDF
+            : MediaType.IMAGE
         media.relationType = RelationType.MESSAGE
         return media
       })

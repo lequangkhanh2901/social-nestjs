@@ -349,7 +349,7 @@ export class UserService {
 
     const [_users, count] = await this.userRepository.findAndCount({
       where: {
-        id: Not(In([...friendsId, ...friendsIdOfFriends])),
+        id: Not(In([...friendsId, ...friendsIdOfFriends, id])),
         name: name ? Like(`%${name}%`) : undefined,
         role: UserRoles.NORMAL,
         actived: true,

@@ -1,8 +1,7 @@
 import {
   CreateDateColumn,
   Entity,
-  JoinColumn,
-  OneToOne,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm'
 import { User } from '../user/user.entity'
@@ -14,16 +13,14 @@ export default class Friend {
   @PrimaryGeneratedColumn()
   id: number
 
-  @OneToOne(() => User, {
+  @ManyToOne(() => User, (user) => user.friendAsOne, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn()
   user_one: User
 
-  @OneToOne(() => User, {
+  @ManyToOne(() => User, (user) => user.friendAsTwo, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn()
   user_two: User
 
   @CreateDateColumn()

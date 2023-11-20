@@ -20,6 +20,13 @@ export class CreatePostDto {
 
   @ApiProperty({
     required: false,
+  })
+  @Allow()
+  @IsOptional()
+  userIds: string[]
+
+  @ApiProperty({
+    required: false,
     type: 'array',
     items: {
       type: 'string',

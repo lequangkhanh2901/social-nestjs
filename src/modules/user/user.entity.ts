@@ -20,6 +20,7 @@ import Like from '../like/like.entity'
 import Conversation from '../conversation/conversation.entity'
 import Message from '../message/message.entity'
 import Notification from '../notification/notification.entity'
+import Friend from '../friend/friend.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -113,6 +114,12 @@ export class User {
 
   @OneToMany(() => Notification, (notification) => notification.userTaget)
   notificationTargets: Notification[]
+
+  @OneToMany(() => Friend, (friend) => friend.user_one)
+  friendAsOne: Friend[]
+
+  @OneToMany(() => Friend, (friend) => friend.user_two)
+  friendAsTwo: Friend[]
 
   @CreateDateColumn()
   createdAt: Date
