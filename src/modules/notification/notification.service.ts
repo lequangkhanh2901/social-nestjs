@@ -22,6 +22,7 @@ import { FriendService } from '../friend/friend.service'
 import { UserService } from '../user/user.service'
 import { PostService } from '../post/post.service'
 import { SocketService } from '../socket/socket.service'
+import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
 
 @Injectable()
 export class NotificationService {
@@ -454,5 +455,41 @@ export class NotificationService {
       `notification-${userId}-update`,
       notificationId,
     )
+  }
+
+  async readAll(authorization: string) {
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    await this.notificationRepository.update(
+      {
+        user: {
+          id,
+        },
+        isRead: false,
+      },
+      {
+        isRead: true,
+      },
+    )
+
+    return {
+      message: ResponseMessage.UPDATED,
+    }
+  }
+
+  async deleteAll(authorization: string) {
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+
+    await this.notificationRepository.delete({
+      user: {
+        id,
+      },
+    })
+    return {
+      message: ResponseMessage.DELETED,
+    }
   }
 }

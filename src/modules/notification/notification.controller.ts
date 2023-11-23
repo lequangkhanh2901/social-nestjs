@@ -59,6 +59,11 @@ export class NotificationController {
     )
   }
 
+  @Put('read-all')
+  readAll(@Headers() headers) {
+    return this.notificationService.readAll(headers.authorization)
+  }
+
   @Delete(':notificationId/delete')
   deleteNotification(
     @Headers() headers,
@@ -68,5 +73,10 @@ export class NotificationController {
       headers.authorization,
       notificationId,
     )
+  }
+
+  @Delete('delete-all')
+  deleteAll(@Headers() headers) {
+    return this.notificationService.deleteAll(headers.authorization)
   }
 }
