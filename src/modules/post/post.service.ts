@@ -423,6 +423,12 @@ export class PostService {
       user: {
         avatarId: true,
       },
+      originPost: {
+        user: {
+          avatarId: true,
+        },
+        medias: true,
+      },
     }
     const select: FindOptionsSelect<Post> = {
       comments: {
@@ -437,6 +443,25 @@ export class PostService {
       user: {
         id: true,
         name: true,
+      },
+      originPost: {
+        id: true,
+        content: true,
+        createdAt: true,
+        user: {
+          id: true,
+          name: true,
+          username: true,
+          avatarId: {
+            id: true,
+            cdn: true,
+          },
+        },
+        medias: {
+          id: true,
+          cdn: true,
+          type: true,
+        },
       },
     }
 
@@ -519,6 +544,13 @@ export class PostService {
         _post.medias.forEach(
           (media) => (media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`),
         )
+
+        if (post.originPost) {
+          post.originPost.user.avatarId.cdn = `${process.env.BE_BASE_URL}${post.originPost.user.avatarId.cdn}`
+          post.originPost.medias.forEach((media) => {
+            media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`
+          })
+        }
 
         delete _post.likes
         delete _post.comments
