@@ -27,7 +27,13 @@ import generateKey from 'src/core/helper/generateKey'
 import { QueryDto } from 'src/core/dto'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
 import { PostService } from './post.service'
-import { CreatePostDto, DeletePostDto, UpdatePostDto } from './post.dto'
+import {
+  CreatePostDto,
+  DeletePostDto,
+  SharePostDto,
+  UpdatePostDto,
+  UpdateSharedPostDto,
+} from './post.dto'
 import UsernameGuard from 'src/core/guards/username.guard'
 
 @UseGuards(AuthGuard)
@@ -90,6 +96,11 @@ export class PostController {
     medias: Express.Multer.File[],
   ) {
     return this.postService.createPost(headers.authorization, body, medias)
+  }
+
+  @Post('/share')
+  sharePost(@Headers() headers, @Body() body: SharePostDto) {
+    return this.postService.sharePost(headers.authorization, body)
   }
 
   @Get()
@@ -179,5 +190,10 @@ export class PostController {
     medias: Express.Multer.File[],
   ) {
     return this.postService.updatePost(headers.authorization, body, medias)
+  }
+
+  @Put('shared')
+  updateSharedPost(@Headers() headers, @Body() body: UpdateSharedPostDto) {
+    return this.postService.updateSharedPost(headers.authorization, body)
   }
 }

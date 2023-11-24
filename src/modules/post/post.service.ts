@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -28,7 +29,13 @@ import { User } from '../user/user.entity'
 import Post from './post.entity'
 import Media from '../media/media.entity'
 import { FriendService } from '../friend/friend.service'
-import { CreatePostDto, ResponseUserPost, UpdatePostDto } from './post.dto'
+import {
+  CreatePostDto,
+  ResponseUserPost,
+  SharePostDto,
+  UpdatePostDto,
+  UpdateSharedPostDto,
+} from './post.dto'
 import { UserService } from '../user/user.service'
 import { MediaService } from '../media/media.service'
 import { NotificationService } from '../notification/notification.service'
@@ -122,7 +129,7 @@ export class PostService {
         user: {
           id: idUser,
         },
-        type: Not(PostType.PRIVATE),
+        // type: Not(PostType.PRIVATE),
       })),
       skip,
       take: limit,
@@ -139,6 +146,25 @@ export class PostService {
         comments: {
           id: true,
         },
+        originPost: {
+          user: {
+            id: true,
+            name: true,
+            username: true,
+            avatarId: {
+              id: true,
+              cdn: true,
+            },
+          },
+          id: true,
+          content: true,
+          medias: {
+            id: true,
+            cdn: true,
+            type: true,
+          },
+          createdAt: true,
+        },
       },
       relations: {
         medias: true,
@@ -149,15 +175,44 @@ export class PostService {
           user: true,
         },
         comments: true,
+        originPost: {
+          user: {
+            avatarId: true,
+          },
+          medias: true,
+        },
       },
     })
 
-    posts.forEach((post) => {
+    posts.forEach((post, index) => {
+      if (post.user.id !== id) {
+        if (post.type === PostType.PRIVATE) {
+          posts[index] = null
+          return
+        }
+
+        if (
+          (post.type === PostType.CUSTOM_EXCLUDE &&
+            post.userIds.includes(id)) ||
+          (post.type === PostType.CUSTOM_ONLY && !post.userIds.includes(id))
+        ) {
+          posts[index] = null
+          return
+        }
+      }
+
       post.medias.forEach(
         (media) => (media.cdn = process.env.BE_BASE_URL + media.cdn),
       )
       post.user = new ResponseUserPost(post.user) as typeof post.user
       post.user.avatarId.cdn = process.env.BE_BASE_URL + post.user.avatarId.cdn
+
+      if (post.originPost) {
+        post.originPost.medias.forEach((media) => {
+          media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`
+        })
+        post.originPost.user.avatarId.cdn = `${process.env.BE_BASE_URL}${post.originPost.user.avatarId.cdn}`
+      }
     })
 
     return {
@@ -181,11 +236,17 @@ export class PostService {
   }
 
   async getPost(authorization: string, postId: string) {
-    const post = await this.postRepository.findOne({
+    const [post] = await this.postRepository.find({
       where: {
         id: postId,
       },
       relations: {
+        originPost: {
+          user: {
+            avatarId: true,
+          },
+          medias: true,
+        },
         user: {
           avatarId: true,
         },
@@ -219,6 +280,25 @@ export class PostService {
           cdn: true,
           type: true,
         },
+        originPost: {
+          id: true,
+          content: true,
+          createdAt: true,
+          user: {
+            id: true,
+            name: true,
+            username: true,
+            avatarId: {
+              id: true,
+              cdn: true,
+            },
+          },
+          medias: {
+            id: true,
+            cdn: true,
+            type: true,
+          },
+        },
       },
     })
 
@@ -240,6 +320,13 @@ export class PostService {
     post.medias.forEach((media) => {
       media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`
     })
+
+    if (post.originPost) {
+      post.originPost.user.avatarId.cdn = `${process.env.BE_BASE_URL}${post.originPost.user.avatarId.cdn}`
+      post.originPost.medias.forEach((media) => {
+        media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`
+      })
+    }
 
     post['likeData'] = {
       total: post.likes.length,
@@ -529,6 +616,72 @@ export class PostService {
       media.cdn = `${process.env.BE_BASE_URL}${media.cdn}`
     })
     return post
+  }
+
+  async sharePost(authorization: string, body: SharePostDto) {
+    const _post = await this.postRepository.findOne({
+      where: {
+        id: body.originPostId,
+      },
+      relations: {
+        originPost: true,
+      },
+      select: {
+        originPost: {
+          id: true,
+        },
+      },
+    })
+
+    if (!_post) throw new NotFoundException()
+
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+
+    let originPost: Post
+    if (_post.isOrigin) {
+      originPost = _post
+    } else {
+      originPost = _post.originPost
+    }
+
+    const post = new Post()
+    post.user = { id } as User
+
+    post.content = body.content
+    post.originPost = originPost
+
+    post.isOrigin = false
+
+    await this.postRepository.save(post)
+    return post
+  }
+
+  async updateSharedPost(authorization: string, body: UpdateSharedPostDto) {
+    const post = await this.postRepository.findOne({
+      where: {
+        id: body.postId,
+      },
+      relations: {
+        user: true,
+      },
+      select: {
+        user: {
+          id: true,
+        },
+      },
+    })
+
+    if (!post) throw new NotFoundException()
+
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    if (id !== post.user.id) throw new ForbiddenException()
+
+    post.content = body.content || ''
+    return await this.postRepository.save(post)
   }
 
   async getPostOptions({ options }: { options: FindManyOptions<Post> }) {

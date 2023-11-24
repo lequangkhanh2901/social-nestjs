@@ -43,6 +43,11 @@ export default class Post {
   })
   userIds: string[]
 
+  @Column({
+    default: true,
+  })
+  isOrigin: boolean
+
   @OneToMany(() => Comment, (comment) => comment.post, {
     cascade: true,
   })
@@ -57,6 +62,15 @@ export default class Post {
     cascade: true,
   })
   medias: Media[]
+
+  @OneToMany(() => Post, (post) => post.originPost)
+  sharedPosts: Post[]
+
+  @ManyToOne(() => Post, (post) => post.sharedPosts, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  originPost: Post
 
   @CreateDateColumn()
   createdAt: Date

@@ -136,3 +136,29 @@ export class UpdatePostDto {
   })
   type: PostType
 }
+
+export class SharePostDto {
+  @ApiProperty({
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  content?: string
+
+  @ApiProperty()
+  @IsUUID()
+  originPostId: string
+}
+
+export class UpdateSharedPostDto {
+  @ApiProperty()
+  @IsUUID()
+  postId: string
+
+  @ApiProperty({
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  content?: string
+}
