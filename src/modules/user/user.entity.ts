@@ -21,6 +21,7 @@ import Conversation from '../conversation/conversation.entity'
 import Message from '../message/message.entity'
 import Notification from '../notification/notification.entity'
 import Friend from '../friend/friend.entity'
+import { Report } from '../report/report.entity'
 
 @Entity({ name: 'users' })
 export class User {
@@ -120,6 +121,12 @@ export class User {
 
   @OneToMany(() => Friend, (friend) => friend.user_two)
   friendAsTwo: Friend[]
+
+  @OneToMany(() => Report, (report) => report.user)
+  reports: Report[]
+
+  @OneToMany(() => Report, (report) => report.userTarget)
+  reportTargets: Report[]
 
   @CreateDateColumn()
   createdAt: Date

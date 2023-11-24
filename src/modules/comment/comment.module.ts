@@ -16,5 +16,6 @@ import { NotificationModule } from '../notification/notification.module'
     forwardRef(() => MediaModule),
     forwardRef(() => NotificationModule),
   ],
+  exports: [CommentService],
 })
 export class CommentModule {}

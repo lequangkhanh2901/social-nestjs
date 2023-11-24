@@ -1,43 +1,70 @@
-// import {
-//   CreateDateColumn,
-//   Entity,
-//   JoinColumn,
-//   ManyToOne,
-//   OneToOne,
-//   PrimaryGeneratedColumn,
-//   UpdateDateColumn,
-// } from 'typeorm'
-// import { User } from '../user/user.entity'
-// import Post from '../post/post.entity'
-// import Comment from '../comment/comment.entity'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm'
 
-// @Entity()
-// export class Report {
-//   @PrimaryGeneratedColumn('uuid')
-//   id: string
+import { ReportReason, ResolveStatus } from 'src/core/enums/report'
+import { User } from '../user/user.entity'
+import Post from '../post/post.entity'
+import Comment from '../comment/comment.entity'
 
-//   @ManyToOne(() => User, (user) => user.reports)
-//   user: User
+@Entity()
+export class Report {
+  @PrimaryGeneratedColumn('uuid')
+  id: string
 
-//   @OneToOne(() => User)
-//   @JoinColumn()
-//   userTarget: User
+  @Column({
+    default: false,
+  })
+  handled: boolean
 
-//   @OneToOne(() => Post, {
-//     nullable: true,
-//   })
-//   @JoinColumn()
-//   post?: Post
+  @Column({
+    type: 'enum',
+    enum: ReportReason,
+  })
+  reason: ReportReason
 
-//   @OneToOne(() => Comment, {
-//     nullable: true,
-//   })
-//   @JoinColumn()
-//   comment?: Comment
+  @Column()
+  note: string
 
-//   @CreateDateColumn()
-//   createdAt: string
+  @Column({
+    type: 'enum',
+    enum: ResolveStatus,
+    default: ResolveStatus.NONE,
+  })
+  status: ResolveStatus
 
-//   @UpdateDateColumn()
-//   updatedAt: string
-// }
+  @ManyToOne(() => User, (user) => user.reports)
+  user: User
+
+  @ManyToOne(() => User, (user) => user.reportTargets)
+  userTarget: User
+
+  @ManyToOne(() => Post, (post) => post.reports, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  post?: Post
+
+  @ManyToOne(() => Comment, (comment) => comment.reports, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  comment?: Comment
+
+  @ManyToOne(() => User, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  manager?: User
+
+  @CreateDateColumn()
+  createdAt: string
+
+  @UpdateDateColumn()
+  updatedAt: string
+}

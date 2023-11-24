@@ -15,6 +15,7 @@ import { PostType } from 'src/core/enums/post'
 import Comment from '../comment/comment.entity'
 import Like from '../like/like.entity'
 import Media from '../media/media.entity'
+import { Report } from '../report/report.entity'
 
 @Entity({
   name: 'posts',
@@ -71,6 +72,9 @@ export default class Post {
     onDelete: 'SET NULL',
   })
   originPost: Post
+
+  @OneToMany(() => Report, (report) => report.post)
+  reports: Report[]
 
   @CreateDateColumn()
   createdAt: Date

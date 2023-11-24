@@ -15,6 +15,7 @@ import { User } from '../user/user.entity'
 import Post from '../post/post.entity'
 import Like from '../like/like.entity'
 import Media from '../media/media.entity'
+import { Report } from '../report/report.entity'
 
 @Entity()
 @Tree('materialized-path')
@@ -56,6 +57,9 @@ export default class Comment {
     cascade: true,
   })
   media: Media
+
+  @OneToMany(() => Report, (report) => report.comment)
+  reports: Report[]
 
   @CreateDateColumn()
   createdAt: Date

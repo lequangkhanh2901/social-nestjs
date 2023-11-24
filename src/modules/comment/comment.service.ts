@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
-import { TreeRepository } from 'typeorm'
+import { FindManyOptions, TreeRepository } from 'typeorm'
 import { extname } from 'path'
 import { unlink } from 'fs'
 
@@ -285,5 +285,9 @@ export class CommentService {
     return generateResponse({
       comment,
     })
+  }
+
+  async getCommentsOption({ options }: { options: FindManyOptions<Comment> }) {
+    return await this.commentRepository.find(options)
   }
 }
