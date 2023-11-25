@@ -33,6 +33,7 @@ import { UserRoles } from 'src/core/enums/user'
 import { UserService } from './user.service'
 import {
   CreateUserDto,
+  GetManagersDto,
   GetUserParams,
   RandomUserQueryDto,
   UpdatePasswordDto,
@@ -55,6 +56,24 @@ export class UserController {
   @Get()
   getMe(@Headers() headers) {
     return this.userService.getMe(headers.authorization)
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN)
+  @Get('statis')
+  getUserStatisAdmin() {
+    return this.userService.getUsersStatisAdmin()
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN)
+  @Get('managers')
+  getManagers(@Query() query: GetManagersDto) {
+    return this.userService.getManagers(
+      query.skip || 0,
+      query.limit || 10,
+      query.name,
+    )
   }
 
   @Put('password')
@@ -127,5 +146,12 @@ export class UserController {
   @Roles(UserRoles.ADMIN)
   createAccount(@Body() body: CreateUserDto) {
     return this.userService.createAccount(body)
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN)
+  @Post('manager')
+  createManager(@Body() body: CreateUserDto) {
+    return this.userService.createManager(body)
   }
 }

@@ -145,3 +145,12 @@ export class RandomUserQueryDto extends QueryDto {
   @IsOptional()
   name?: string
 }
+
+export class GetManagersDto extends QueryDto {
+  @ApiProperty({
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  name?: string
+}

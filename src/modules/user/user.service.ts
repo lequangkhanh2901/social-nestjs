@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Inject,
@@ -14,6 +15,7 @@ import {
   FindOptionsSelect,
   In,
   Like,
+  MoreThan,
   Not,
   Repository,
 } from 'typeorm'
@@ -414,5 +416,116 @@ export class UserService {
     await this.userRepository.save(user)
 
     this.socketService.socket.emit(`ban-user-${idUser}`)
+  }
+
+  async getUsersStatisAdmin() {
+    const time = Date.now() - 6 * 30 * 24 * 60 * 60 * 1000
+
+    const [users, totalUser, totalBannedUser] = await Promise.all([
+      this.userRepository.find({
+        where: {
+          role: UserRoles.NORMAL,
+          createdAt: MoreThan(new Date(time)),
+        },
+        order: {
+          createdAt: 'ASC',
+        },
+      }),
+      this.userRepository.count({
+        where: {
+          role: UserRoles.NORMAL,
+        },
+      }),
+      this.userRepository.count({
+        where: {
+          status: UserStatus.BANNED,
+        },
+      }),
+    ])
+
+    const currentMonth = new Date().getMonth() + 1
+
+    const data = {}
+    for (let i = currentMonth - 5; i <= currentMonth; i++) {
+      let key
+      if (i < 1) {
+        key = i + 12
+      } else key = i
+      data[key] = {
+        users: 0,
+        bannedUsers: 0,
+      }
+    }
+
+    users.forEach((user) => {
+      const month = new Date(user.createdAt).getMonth() + 1
+      data[month].users += 1
+
+      if (user.status === UserStatus.BANNED) data[month].bannedUsers += 1
+    })
+
+    return generateResponse({
+      newUsers: data,
+      totalUser,
+      totalBannedUser,
+    })
+  }
+
+  async createManager(body: CreateUserDto) {
+    const exist = await this.userRepository.exist({
+      where: {
+        email: body.email,
+      },
+    })
+
+    if (exist) throw new BadRequestException(ResponseMessage.EXISTED_EMAIL)
+
+    const user = new User()
+    user.email = body.email
+    user.password = hashSync(body.password, saltRound)
+    user.role = UserRoles.MANAGER
+
+    return await this.userRepository.save(user)
+  }
+
+  async getManagers(skip: number, limit: number, name?: string) {
+    const [managers, count] = await this.userRepository.findAndCount({
+      where: {
+        role: UserRoles.MANAGER,
+        name: name ? Like(`%${name}%`) : undefined,
+        actived: true,
+      },
+      relations: {
+        avatarId: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        avatarId: {
+          id: true,
+          cdn: true,
+        },
+        createdAt: true,
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+      take: limit,
+      skip,
+    })
+
+    managers.forEach((manager) => {
+      manager.avatarId.cdn = `${process.env.BE_BASE_URL}${manager.avatarId.cdn}`
+    })
+
+    return generateResponse(
+      {
+        managers,
+      },
+      {
+        count,
+      },
+    )
   }
 }
