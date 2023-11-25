@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import {
+  IsArray,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -7,7 +8,7 @@ import {
   IsUUID,
   Length,
 } from 'class-validator'
-import { ReportReason } from 'src/core/enums/report'
+import { AcceptAction, ReportReason } from 'src/core/enums/report'
 
 export class AddReportDto {
   @ApiProperty({
@@ -38,4 +39,19 @@ export class AddReportDto {
   @IsString()
   @IsOptional()
   note?: string
+}
+
+export class AcceptActionDto {
+  @ApiProperty({
+    type: 'array',
+    items: {
+      type: 'enum',
+      enum: Object.values(AcceptAction),
+    },
+  })
+  @IsArray()
+  @IsEnum(AcceptAction, {
+    each: true,
+  })
+  actions: AcceptAction[]
 }

@@ -40,6 +40,7 @@ import Media from '../media/media.entity'
 import Album from '../album/album.entity'
 import { FriendService } from '../friend/friend.service'
 import { RequestFriendService } from '../request-friend/request-friend.service'
+import { SocketService } from '../socket/socket.service'
 
 @Injectable()
 export class UserService {
@@ -50,6 +51,8 @@ export class UserService {
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => RequestFriendService))
     private readonly requestFriendService: RequestFriendService,
+    @Inject(forwardRef(() => SocketService))
+    private readonly socketService: SocketService,
   ) {}
 
   async getByEmail(email: string) {
@@ -398,5 +401,18 @@ export class UserService {
         conversations: true,
       },
     })
+  }
+
+  async ban(idUser: string) {
+    const user = await this.userRepository.findOneBy({
+      id: idUser,
+    })
+
+    if (!user) throw new NotFoundException()
+
+    user.status = UserStatus.BANNED
+    await this.userRepository.save(user)
+
+    this.socketService.socket.emit(`ban-user-${idUser}`)
   }
 }

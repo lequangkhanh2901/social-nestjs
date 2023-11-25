@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   HttpException,
   HttpStatus,
   Inject,
@@ -157,6 +158,8 @@ export class AuthService {
     try {
       const data = await this.jwtService.verifyAsync(token)
       const user = await this.userService.getById(data.id)
+      if (user.status === UserStatus.BANNED)
+        throw new ForbiddenException(ResponseMessage.BANNED_ACCOUT)
       const [refresh, access] = await Promise.all([
         this.createRefresh(user.id),
         this.createAccess(user.id, user.role),
@@ -187,6 +190,10 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.userService.getByEmail(email)
     if (!user) throw new NotFoundException()
+
+    if (user.status === UserStatus.BANNED)
+      throw new ForbiddenException(ResponseMessage.BANNED_ACCOUT)
+
     const token = await this.jwtService.signAsync(
       { email, type: VerifyAction.FORGOT_PASSWORD },
       {

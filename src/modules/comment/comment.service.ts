@@ -17,6 +17,7 @@ import generateResponse from 'src/core/helper/generateResponse'
 import { AccessData } from 'src/core/types/common'
 import { MediaType, RelationType } from 'src/core/enums/media'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
+import { UserRoles } from 'src/core/enums/user'
 import { PostService } from '../post/post.service'
 import { MediaService } from '../media/media.service'
 import Comment from './comment.entity'
@@ -172,7 +173,7 @@ export class CommentService {
   }
 
   async deleteComment(authorization: string, idComment: number) {
-    const { id }: AccessData = await this.jwtService.verify(
+    const { id, role }: AccessData = await this.jwtService.verify(
       getBearerToken(authorization),
     )
 
@@ -191,7 +192,8 @@ export class CommentService {
       },
     })
 
-    if (!comment || comment.user.id !== id) throw new NotFoundException()
+    if (!comment || (comment.user.id !== id && role !== UserRoles.MANAGER))
+      throw new NotFoundException()
 
     const commentsTree = await this.commentRepository.findDescendants(comment, {
       relations: ['media'],

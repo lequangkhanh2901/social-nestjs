@@ -1,4 +1,7 @@
 import {
+  AfterLoad,
+  BeforeInsert,
+  BeforeUpdate,
   Column,
   CreateDateColumn,
   Entity,
@@ -7,7 +10,11 @@ import {
   UpdateDateColumn,
 } from 'typeorm'
 
-import { ReportReason, ResolveStatus } from 'src/core/enums/report'
+import {
+  AcceptAction,
+  ReportReason,
+  ResolveStatus,
+} from 'src/core/enums/report'
 import { User } from '../user/user.entity'
 import Post from '../post/post.entity'
 import Comment from '../comment/comment.entity'
@@ -38,6 +45,18 @@ export class Report {
   })
   status: ResolveStatus
 
+  @Column({
+    type: 'enum',
+    enum: ['POST', 'COMMENT'],
+  })
+  type: 'POST' | 'COMMENT'
+
+  @Column({
+    type: 'json',
+    nullable: true,
+  })
+  actions: AcceptAction[]
+
   @ManyToOne(() => User, (user) => user.reports)
   user: User
 
@@ -67,4 +86,16 @@ export class Report {
 
   @UpdateDateColumn()
   updatedAt: string
+
+  @AfterLoad()
+  afterLoad() {
+    if (this.actions)
+      this.actions = JSON.parse(this.actions as unknown as string)
+  }
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  tranferBefor() {
+    if (this.actions) this.actions = JSON.stringify(this.actions) as any
+  }
 }

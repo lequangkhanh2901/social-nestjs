@@ -10,3 +10,9 @@ export enum ResolveStatus {
   REJECTED = 'REJECTED',
   ACCEPTED = 'ACCEPTED',
 }
+
+export enum AcceptAction {
+  DELETE_ORIGIN = 'DELETE_ORIGIN',
+  WARN_USER = 'WARN_USER',
+  BAN_USER = 'BAN_USER',
+}

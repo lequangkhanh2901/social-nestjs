@@ -22,7 +22,7 @@ import { getBearerToken } from 'src/core/helper/getToken'
 import { MediaType, RelationType } from 'src/core/enums/media'
 import { AccessData } from 'src/core/types/common'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
-import { RelationWithUser } from 'src/core/enums/user'
+import { RelationWithUser, UserRoles } from 'src/core/enums/user'
 import { PostType } from 'src/core/enums/post'
 
 import { User } from '../user/user.entity'
@@ -339,7 +339,7 @@ export class PostService {
   }
 
   async deletePost(authorization: string, idPost: string) {
-    const { id }: AccessData = await this.jwtService.verify(
+    const { id, role }: AccessData = await this.jwtService.verify(
       getBearerToken(authorization),
     )
 
@@ -369,7 +369,8 @@ export class PostService {
       },
     })
 
-    if (!post || post.user.id !== id) throw new NotFoundException()
+    if (!post || (post.user.id !== id && role !== UserRoles.MANAGER))
+      throw new NotFoundException()
 
     const medias: (Media | null)[] = [
       ...post.medias,

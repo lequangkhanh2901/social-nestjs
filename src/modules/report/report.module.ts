@@ -6,6 +6,7 @@ import { ReportService } from './report.service'
 import { Report } from './report.entity'
 import { PostModule } from '../post/post.module'
 import { CommentModule } from '../comment/comment.module'
+import { UserModule } from '../user/user.module'
 
 @Module({
   controllers: [ReportController],
@@ -14,6 +15,7 @@ import { CommentModule } from '../comment/comment.module'
     TypeOrmModule.forFeature([Report]),
     forwardRef(() => PostModule),
     forwardRef(() => CommentModule),
+    forwardRef(() => UserModule),
   ],
 })
 export class ReportModule {}

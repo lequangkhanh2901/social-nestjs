@@ -24,4 +24,6 @@ export enum ResponseMessage {
   CANCELED = 'CANCELED',
 
   INVALID_FILE_TYPE = 'INVALID_FILE_TYPE',
+
+  HANDLED = 'HANDLED',
 }
