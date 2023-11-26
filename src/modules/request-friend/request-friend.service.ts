@@ -9,9 +9,10 @@ import {
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { FindManyOptions, Repository } from 'typeorm'
 
 import { getBearerToken } from 'src/core/helper/getToken'
+import generateResponse from 'src/core/helper/generateResponse'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
 import { AccessData } from 'src/core/types/common'
 
@@ -89,12 +90,12 @@ export class RequestFriendService {
     return response
   }
 
-  async received(authorization: string) {
+  async received(authorization: string, skip: number, limit: number) {
     const { id }: AccessData = await this.jwtService.verify(
       getBearerToken(authorization),
     )
 
-    const requests = await this.requestFriendRepository.find({
+    const [requests, count] = await this.requestFriendRepository.findAndCount({
       where: {
         user_target: {
           id,
@@ -116,9 +117,11 @@ export class RequestFriendService {
           },
         },
       },
+      take: limit,
+      skip,
     })
 
-    return requests.map((request) => ({
+    const _requests = requests.map((request) => ({
       ...request,
       user: {
         ...request.user,
@@ -128,6 +131,15 @@ export class RequestFriendService {
         },
       },
     }))
+
+    return generateResponse(
+      {
+        requests: _requests,
+      },
+      {
+        count,
+      },
+    )
   }
 
   async sent(authorization: string) {
@@ -295,5 +307,13 @@ export class RequestFriendService {
     })
 
     return request
+  }
+
+  async getRequestOptions({
+    options,
+  }: {
+    options: FindManyOptions<RequestFriend>
+  }) {
+    return await this.requestFriendRepository.find(options)
   }
 }

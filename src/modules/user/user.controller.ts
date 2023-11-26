@@ -101,6 +101,37 @@ export class UserController {
       }),
     }),
   )
+  @Put('avatar')
+  @ApiConsumes('multipart/form-data')
+  updateAvatar(
+    @Headers() headers,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: 'image',
+        })
+        .build(),
+    )
+    avatar: Express.Multer.File,
+  ) {
+    return this.userService.updateAvatar(headers.authorization, avatar)
+  }
+
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: diskStorage({
+        destination: (req, file, callback) => {
+          mkdirSync('./public/images/', { recursive: true })
+          return callback(null, './public/images/')
+        },
+        filename: (req, file, callback) => {
+          const ext = extname(file.originalname)
+          const fileName = `${Date.now()}-${generateKey(10)}${ext}`
+          callback(null, fileName)
+        },
+      }),
+    }),
+  )
   @Post('avatar')
   @ApiConsumes('multipart/form-data')
   uploadAvatar(

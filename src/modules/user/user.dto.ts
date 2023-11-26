@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Exclude, Transform } from 'class-transformer'
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -144,6 +145,13 @@ export class RandomUserQueryDto extends QueryDto {
   @IsString()
   @IsOptional()
   name?: string
+
+  @ApiProperty({
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  excludeRequestFriend?: boolean
 }
 
 export class GetManagersDto extends QueryDto {

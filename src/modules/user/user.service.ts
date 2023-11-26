@@ -20,6 +20,7 @@ import {
   Repository,
 } from 'typeorm'
 import { compare, hashSync } from 'bcrypt'
+import { unlink } from 'fs'
 
 import { saltRound } from 'src/core/constants'
 import { ResponseMessage } from 'src/core/enums/responseMessages.enum'
@@ -39,7 +40,6 @@ import {
   UpdateUserDto,
 } from './user.dto'
 import Media from '../media/media.entity'
-import Album from '../album/album.entity'
 import { FriendService } from '../friend/friend.service'
 import { RequestFriendService } from '../request-friend/request-friend.service'
 import { SocketService } from '../socket/socket.service'
@@ -172,16 +172,16 @@ export class UserService {
       where: { id },
       relations: {
         avatarId: true,
-        albums: true,
+        // albums: true,
       },
     })
 
     const media = new Media()
-    const album = new Album()
-    album.type = 'DEFAULT'
-    album.name = 'AVATAR'
-    album.medias = [media]
-    user.albums = [...user.albums, album]
+    // const album = new Album()
+    // album.type = 'DEFAULT'
+    // album.name = 'AVATAR'
+    // album.medias = [media]
+    // user.albums = [...user.albums, album]
 
     media.cdn = avatar.path.replace('public', '')
     media.type = MediaType.IMAGE
@@ -338,6 +338,7 @@ export class UserService {
     name,
     skip = 0,
     limit = 10,
+    excludeRequestFriend,
   }: {
     authorization: string
   } & RandomUserQueryDto) {
@@ -352,9 +353,50 @@ export class UserService {
       )
     }
 
+    let userRequestId = []
+
+    if (excludeRequestFriend) {
+      const requests = await this.requestFriendService.getRequestOptions({
+        options: {
+          where: [
+            {
+              user: {
+                id,
+              },
+            },
+            {
+              user_target: {
+                id,
+              },
+            },
+          ],
+          relations: {
+            user: true,
+            user_target: true,
+          },
+          select: {
+            id: true,
+            user: {
+              id: true,
+            },
+            user_target: {
+              id: true,
+            },
+          },
+        },
+      })
+
+      userRequestId = requests.map((request) => {
+        if (request.user.id === id) return request.user_target.id
+        return request.user.id
+      })
+    }
+
     const [_users, count] = await this.userRepository.findAndCount({
       where: {
-        id: Not(In([...friendsId, ...friendsIdOfFriends, id])),
+        id: Not(
+          In([...friendsId, ...friendsIdOfFriends, id, ...userRequestId]),
+        ),
         name: name ? Like(`%${name}%`) : undefined,
         role: UserRoles.NORMAL,
         actived: true,
@@ -527,5 +569,42 @@ export class UserService {
         count,
       },
     )
+  }
+
+  async updateAvatar(authorization: string, avatar: Express.Multer.File) {
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+    const user = await this.userRepository.findOne({
+      where: {
+        id,
+      },
+      relations: {
+        avatarId: true,
+      },
+      select: {
+        id: true,
+        avatarId: {
+          id: true,
+          cdn: true,
+        },
+      },
+    })
+
+    unlink(
+      __dirname.replace('dist/modules/user', 'public') + user.avatarId.cdn,
+      () => {
+        //
+      },
+    )
+
+    user.avatarId.cdn = avatar.path.replace('public', '')
+    await this.userRepository.save(user)
+    return {
+      message: ResponseMessage.UPDATED,
+      data: {
+        cdn: `${process.env.BE_BASE_URL}${user.avatarId.cdn}`,
+      },
+    }
   }
 }

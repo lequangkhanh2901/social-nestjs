@@ -2,7 +2,7 @@ import { DataSource, DataSourceOptions } from 'typeorm'
 import { config } from 'dotenv'
 import { User } from 'src/modules/user/user.entity'
 import Media from 'src/modules/media/media.entity'
-import Album from 'src/modules/album/album.entity'
+// import Album from 'src/modules/album/album.entity'
 import Post from 'src/modules/post/post.entity'
 import Comment from 'src/modules/comment/comment.entity'
 import Like from 'src/modules/like/like.entity'
@@ -26,7 +26,7 @@ export const dataSourceOptions: DataSourceOptions = {
     User,
     RequestFriend,
     Media,
-    Album,
+    // Album,
     Post,
     Comment,
     Like,

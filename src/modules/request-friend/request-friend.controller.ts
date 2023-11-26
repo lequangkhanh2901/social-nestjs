@@ -7,10 +7,12 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { AuthGuard } from 'src/core/guards/auth.guard'
+import { QueryDto } from 'src/core/dto'
 import { RequestFriendService } from './request-friend.service'
 import { ParamsDto } from './request-friend.dto'
 
@@ -27,8 +29,12 @@ export class RequestFriendController {
   }
 
   @Get('receive')
-  requestReceived(@Headers() headers) {
-    return this.requestFriendService.received(headers.authorization)
+  requestReceived(@Headers() headers, @Query() query: QueryDto) {
+    return this.requestFriendService.received(
+      headers.authorization,
+      query.skip || 0,
+      query.limit || 10,
+    )
   }
 
   @Get('sent')

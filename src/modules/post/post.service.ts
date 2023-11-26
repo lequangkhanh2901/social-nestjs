@@ -193,8 +193,8 @@ export class PostService {
 
         if (
           (post.type === PostType.CUSTOM_EXCLUDE &&
-            post.userIds.includes(id)) ||
-          (post.type === PostType.CUSTOM_ONLY && !post.userIds.includes(id))
+            post.userIds?.includes(id)) ||
+          (post.type === PostType.CUSTOM_ONLY && !post.userIds?.includes(id))
         ) {
           posts[index] = null
           return
@@ -220,6 +220,7 @@ export class PostService {
         total: count,
       },
       posts: posts.map((post) => {
+        if (!post) return post
         const postData = {
           ...post,
           likeData: {

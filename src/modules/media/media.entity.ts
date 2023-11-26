@@ -3,14 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
-  ManyToMany,
   ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm'
 import { User } from '../user/user.entity'
 import { MediaType, RelationType } from 'src/core/enums/media'
-import Album from '../album/album.entity'
 import Post from '../post/post.entity'
 import Comment from '../comment/comment.entity'
 import Message from '../message/message.entity'
@@ -35,10 +33,11 @@ export default class Media {
   })
   type: MediaType
 
-  @ManyToMany(() => Album, (album) => album.medias, {
-    nullable: true,
-  })
-  albums: Album[]
+  // @ManyToMany(() => Album, (album) => album.medias, {
+  //   nullable: true,
+  //   cascade: true,
+  // })
+  // albums: Album[]
 
   @ManyToOne(() => Post, (post) => post.medias, {
     onDelete: 'CASCADE',

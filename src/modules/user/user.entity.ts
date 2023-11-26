@@ -13,7 +13,6 @@ import {
 } from 'typeorm'
 import RequestFriend from '../request-friend/request-friend.entity'
 import Media from '../media/media.entity'
-import Album from '../album/album.entity'
 import Post from '../post/post.entity'
 import Comment from '../comment/comment.entity'
 import Like from '../like/like.entity'
@@ -87,10 +86,10 @@ export class User {
   @OneToMany(() => Media, (media) => media.id)
   medias: Media[]
 
-  @OneToMany(() => Album, (album) => album.user, {
-    cascade: true,
-  })
-  albums: Album[]
+  // @OneToMany(() => Album, (album) => album.user, {
+  //   cascade: true,
+  // })
+  // albums: Album[]
 
   @OneToMany(() => Post, (post) => post.user)
   posts: Post[]
