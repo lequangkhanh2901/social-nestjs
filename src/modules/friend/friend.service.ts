@@ -16,6 +16,7 @@ import generateResponse from 'src/core/helper/generateResponse'
 import Friend from './friend.entity'
 import { UserService } from '../user/user.service'
 import { User } from '../user/user.entity'
+import { RequestFriendService } from '../request-friend/request-friend.service'
 
 @Injectable()
 export class FriendService {
@@ -25,6 +26,8 @@ export class FriendService {
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => UserService))
     private userService: UserService,
+    @Inject(forwardRef(() => RequestFriendService))
+    private requestFriendService: RequestFriendService,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
@@ -459,21 +462,64 @@ export class FriendService {
     name,
     skip = 0,
     limit = 10,
+    excludeRequestFriend,
   }: {
     authorization: string
     limit?: number
     skip?: number
     name?: string
+    excludeRequestFriend?: boolean
   }) {
     const { id }: AccessData = await this.jwtService.verifyAsync(
       getBearerToken(authorization),
     )
 
-    const idUsers = (await this.getIdsFriendOfUser(id)).filter(
+    const _idUsers = (await this.getIdsFriendOfUser(id)).filter(
       (_id) => id !== _id,
     )
 
-    if (!idUsers.length) return generateResponse({ users: [] }, { count: 0 })
+    let userRequestId = []
+
+    if (excludeRequestFriend) {
+      const requests = await this.requestFriendService.getRequestOptions({
+        options: {
+          where: [
+            {
+              user: {
+                id,
+              },
+            },
+            {
+              user_target: {
+                id,
+              },
+            },
+          ],
+          relations: {
+            user: true,
+            user_target: true,
+          },
+          select: {
+            id: true,
+            user: {
+              id: true,
+            },
+            user_target: {
+              id: true,
+            },
+          },
+        },
+      })
+
+      userRequestId = requests.map((request) => {
+        if (request.user.id === id) return request.user_target.id
+        return request.user.id
+      })
+    }
+
+    if (!_idUsers.length) return generateResponse({ users: [] }, { count: 0 })
+
+    const idUsers = _idUsers.filter((id) => !userRequestId.includes(id))
 
     const [friends, count] = await this.friendRepository.findAndCount({
       where: [

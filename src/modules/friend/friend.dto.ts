@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
-import { IsOptional, IsString } from 'class-validator'
+import { IsBoolean, IsOptional, IsString } from 'class-validator'
 import { QueryDto } from 'src/core/dto'
 
 export class QueryFriendsDto extends QueryDto {
@@ -31,4 +31,11 @@ export class FriendsOfFriendsQueryDto extends QueryDto {
   @IsString()
   @IsOptional()
   name?: string
+
+  @ApiProperty({
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  excludeRequestFriend: boolean
 }

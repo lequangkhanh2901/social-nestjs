@@ -323,6 +323,7 @@ export class ConversationService {
         type: true,
         name: true,
         createdAt: true,
+        status: true,
         users: {
           id: true,
           name: true,
@@ -799,5 +800,20 @@ export class ConversationService {
     )
     await this.updateLastSeenGroup('READ', conservationId, id)
     return
+  }
+
+  async getStatus(conservationId: string) {
+    const conservation = await this.conversationRepository.findOne({
+      where: {
+        id: conservationId,
+      },
+      select: {
+        status: true,
+      },
+    })
+
+    if (!conservation) throw new NotFoundException()
+
+    return conservation.status
   }
 }

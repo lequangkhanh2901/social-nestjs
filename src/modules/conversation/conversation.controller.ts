@@ -215,4 +215,9 @@ export class ConversationController {
       query.limit || 10,
     )
   }
+
+  @Get(':conversationId/status')
+  getStatus(@Param('conversationId', ParseUUIDPipe) conversationId: string) {
+    return this.conversationService.getStatus(conversationId)
+  }
 }
