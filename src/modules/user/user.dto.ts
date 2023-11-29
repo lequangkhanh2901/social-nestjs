@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
 } from 'class-validator'
 import { NotMatch } from 'src/core/decorators/validation/not-match.decorator'
@@ -161,4 +162,16 @@ export class GetManagersDto extends QueryDto {
   @IsString()
   @IsOptional()
   name?: string
+}
+
+export class UpdateStatusManagerDto {
+  @ApiProperty({
+    enum: UserStatus,
+  })
+  @IsEnum(UserStatus)
+  status: UserStatus
+
+  @ApiProperty()
+  @IsUUID()
+  managerId: string
 }

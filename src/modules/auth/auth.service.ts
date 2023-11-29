@@ -43,11 +43,19 @@ export class AuthService {
     if (!isMatch) {
       throw new NotFoundException()
     }
-    if (user.status === UserStatus.BANNED)
-      throw new HttpException(
-        ResponseMessage.BANNED_ACCOUT,
-        HttpStatus.BAD_REQUEST,
-      )
+    if (user.status === UserStatus.BANNED) {
+      if (new Date(user.unBanTime).getTime() > Date.now()) {
+        throw new HttpException(
+          {
+            message: ResponseMessage.BANNED_ACCOUT,
+            openAt: user.unBanTime,
+          },
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+
+      await this.userService.unBan(user.id)
+    }
 
     const [refresh, access] = await Promise.all([
       this.createRefresh(user.id),

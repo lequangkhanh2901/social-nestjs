@@ -37,6 +37,7 @@ import {
   RandomUserQueryDto,
   ResponseUser,
   UpdatePasswordDto,
+  UpdateStatusManagerDto,
   UpdateUserDto,
 } from './user.dto'
 import Media from '../media/media.entity'
@@ -447,7 +448,7 @@ export class UserService {
     })
   }
 
-  async ban(idUser: string) {
+  async ban(idUser: string, time: number) {
     const user = await this.userRepository.findOneBy({
       id: idUser,
     })
@@ -455,6 +456,7 @@ export class UserService {
     if (!user) throw new NotFoundException()
 
     user.status = UserStatus.BANNED
+    user.unBanTime = new Date(Date.now() + time * 24 * 60 * 60 * 1000)
     await this.userRepository.save(user)
 
     this.socketService.socket.emit(`ban-user-${idUser}`)
@@ -606,5 +608,119 @@ export class UserService {
         cdn: `${process.env.BE_BASE_URL}${user.avatarId.cdn}`,
       },
     }
+  }
+
+  async getManager(idManager: string) {
+    const user = await this.userRepository.findOne({
+      where: {
+        id: idManager,
+      },
+      relations: {
+        handledReport: true,
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        status: true,
+        handledReport: {
+          id: true,
+        },
+      },
+    })
+
+    const manager = {
+      ...user,
+      totalHanledReport: user.handledReport.length,
+    }
+    delete manager.handledReport
+
+    return manager
+  }
+
+  async updateManagerStatus(body: UpdateStatusManagerDto) {
+    await this.userRepository.update(
+      { id: body.managerId },
+      {
+        status: body.status,
+      },
+    )
+
+    return {
+      message: ResponseMessage.UPDATED,
+    }
+  }
+
+  async unBan(idUser: string) {
+    await this.userRepository.update(
+      {
+        id: idUser,
+      },
+      {
+        status: UserStatus.ACTIVE,
+        unBanTime: null,
+      },
+    )
+  }
+
+  async getBanned() {
+    const users = await this.userRepository.find({
+      where: {
+        status: UserStatus.BANNED,
+      },
+      relations: {
+        avatarId: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        updatedAt: true,
+        createdAt: true,
+        unBanTime: true,
+        avatarId: {
+          id: true,
+          cdn: true,
+        },
+      },
+    })
+
+    users.forEach((user) => {
+      user.avatarId.cdn = `${process.env.BE_BASE_URL}${user.avatarId.cdn}`
+    })
+
+    return generateResponse({
+      users,
+    })
+  }
+
+  async getListUser() {
+    const users = await this.userRepository.find({
+      where: {
+        role: UserRoles.NORMAL,
+        actived: true,
+      },
+      relations: {
+        avatarId: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        createdAt: true,
+        avatarId: {
+          id: true,
+          cdn: true,
+        },
+      },
+    })
+    users.forEach((user) => {
+      user.avatarId.cdn = `${process.env.BE_BASE_URL}${user.avatarId.cdn}`
+    })
+
+    return generateResponse({
+      users,
+    })
   }
 }

@@ -73,6 +73,7 @@ export class ReportController {
       headers.authorization,
       reportId,
       body.actions,
+      body.time,
     )
   }
 }

@@ -54,4 +54,12 @@ export class AcceptActionDto {
     each: true,
   })
   actions: AcceptAction[]
+
+  @ApiProperty({
+    required: false,
+    description: 'Ban time (days)',
+  })
+  @IsNumber()
+  @IsOptional()
+  time: number
 }

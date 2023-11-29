@@ -75,7 +75,7 @@ export class Report {
   })
   comment?: Comment
 
-  @ManyToOne(() => User, {
+  @ManyToOne(() => User, (user) => user.handledReport, {
     nullable: true,
     onDelete: 'SET NULL',
   })

@@ -63,6 +63,12 @@ export class User {
   })
   sex: UserSex
 
+  @Column({
+    type: 'datetime',
+    nullable: true,
+  })
+  unBanTime?: Date
+
   @OneToOne(() => Media, {
     cascade: true,
   })
@@ -126,6 +132,9 @@ export class User {
 
   @OneToMany(() => Report, (report) => report.userTarget)
   reportTargets: Report[]
+
+  @OneToMany(() => Report, (report) => report.manager) // handled by manager
+  handledReport: Report[]
 
   @CreateDateColumn()
   createdAt: Date

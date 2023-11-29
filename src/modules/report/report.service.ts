@@ -265,8 +265,13 @@ export class ReportService {
     authorization: string,
     reportId: string,
     actions: AcceptAction[],
+    time?: number,
   ) {
-    if (actions.length === 0) throw new BadRequestException()
+    if (
+      actions.length === 0 ||
+      (actions.includes(AcceptAction.BAN_USER) && !time)
+    )
+      throw new BadRequestException()
 
     const report = await this.reportRepositoty.findOne({
       where: {
@@ -317,7 +322,7 @@ export class ReportService {
     }
 
     if (actions.includes(AcceptAction.BAN_USER))
-      await this.userService.ban(report.userTarget.id)
+      await this.userService.ban(report.userTarget.id, time)
 
     if (actions.includes(AcceptAction.WARN_USER)) {
       // todo

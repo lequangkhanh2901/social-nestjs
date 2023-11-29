@@ -5,6 +5,7 @@ import {
   Headers,
   Param,
   ParseFilePipeBuilder,
+  ParseUUIDPipe,
   Post,
   Put,
   Query,
@@ -37,6 +38,7 @@ import {
   GetUserParams,
   RandomUserQueryDto,
   UpdatePasswordDto,
+  UpdateStatusManagerDto,
   UpdateUserDto,
   UploadAvatarDto,
 } from './user.dto'
@@ -74,6 +76,27 @@ export class UserController {
       query.limit || 10,
       query.name,
     )
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN)
+  @Get(':idManager/manager')
+  getManager(@Param('idManager', ParseUUIDPipe) idManager: string) {
+    return this.userService.getManager(idManager)
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN)
+  @Get('banned')
+  getBanned() {
+    return this.userService.getBanned()
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN)
+  @Get('list')
+  getUsers() {
+    return this.userService.getListUser()
   }
 
   @Put('password')
@@ -115,6 +138,13 @@ export class UserController {
     avatar: Express.Multer.File,
   ) {
     return this.userService.updateAvatar(headers.authorization, avatar)
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN)
+  @Put('manager-status')
+  updateManagerStatus(@Body() body: UpdateStatusManagerDto) {
+    return this, this.userService.updateManagerStatus(body)
   }
 
   @UseInterceptors(
