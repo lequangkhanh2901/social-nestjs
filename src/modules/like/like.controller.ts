@@ -1,8 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   Headers,
   HttpCode,
+  Param,
+  ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common'
@@ -17,6 +20,11 @@ import { LikeService } from './like.service'
 @Controller('like')
 export class LikeController {
   constructor(private readonly likeService: LikeService) {}
+
+  @Get(':postId/users/post')
+  getUsers(@Param('postId', ParseUUIDPipe) postId: string) {
+    return this.likeService.getUsersLikePost(postId)
+  }
 
   @Post()
   @HttpCode(200)

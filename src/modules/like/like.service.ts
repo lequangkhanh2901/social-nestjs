@@ -99,4 +99,36 @@ export class LikeService {
       message: ResponseMessage.LIKED,
     }
   }
+
+  async getUsersLikePost(postId: string) {
+    const likes = await this.likeRepository.find({
+      where: {
+        post: {
+          id: postId,
+        },
+      },
+      relations: {
+        user: {
+          avatarId: true,
+        },
+      },
+      select: {
+        id: true,
+        user: {
+          id: true,
+          name: true,
+          username: true,
+          avatarId: {
+            id: true,
+            cdn: true,
+          },
+        },
+      },
+    })
+
+    return likes.map((like) => {
+      like.user.avatarId.cdn = `${process.env.BE_BASE_URL}${like.user.avatarId.cdn}`
+      return like.user
+    })
+  }
 }
