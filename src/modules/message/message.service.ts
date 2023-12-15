@@ -81,6 +81,9 @@ export class MessageService {
               ? MediaType.PDF
               : MediaType.IMAGE
           media.relationType = RelationType.MESSAGE
+          if (extname(file.filename) === '.pdf') {
+            media.name = file.originalname
+          }
           return media
         })
       }
@@ -115,6 +118,9 @@ export class MessageService {
             ? MediaType.PDF
             : MediaType.IMAGE
         media.relationType = RelationType.MESSAGE
+        if (extname(file.filename) === '.pdf') {
+          media.name = file.originalname
+        }
         return media
       })
     }
@@ -176,6 +182,7 @@ export class MessageService {
           id: true,
           cdn: true,
           type: true,
+          name: true,
         },
       },
       take: limit,

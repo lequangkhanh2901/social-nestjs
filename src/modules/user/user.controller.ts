@@ -37,6 +37,7 @@ import {
   GetManagersDto,
   GetUserParams,
   RandomUserQueryDto,
+  UpdateNameDto,
   UpdatePasswordDto,
   UpdateStatusManagerDto,
   UpdateUserDto,
@@ -107,6 +108,11 @@ export class UserController {
   @Put()
   updateUser(@Headers() headers, @Body() body: UpdateUserDto) {
     return this.userService.updateUser(headers.authorization, body)
+  }
+
+  @Put('name')
+  updateName(@Headers() headers, @Body() body: UpdateNameDto) {
+    return this.userService.updateName(headers.authorization, body.name)
   }
 
   @UseInterceptors(

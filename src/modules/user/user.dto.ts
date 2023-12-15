@@ -175,3 +175,14 @@ export class UpdateStatusManagerDto {
   @IsUUID()
   managerId: string
 }
+
+export class UpdateNameDto {
+  @ApiProperty({
+    minLength: 2,
+    maxLength: 30,
+  })
+  @Length(2, 30)
+  @Transform(({ value }) => value.trim())
+  @IsString()
+  name: string
+}

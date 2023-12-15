@@ -33,6 +33,12 @@ export default class Media {
   })
   type: MediaType
 
+  @Column({
+    nullable: true,
+    type: 'text',
+  })
+  name: string | null
+
   // @ManyToMany(() => Album, (album) => album.medias, {
   //   nullable: true,
   //   cascade: true,

@@ -723,4 +723,25 @@ export class UserService {
       users,
     })
   }
+
+  async updateName(authorization: string, name: string) {
+    const { id }: AccessData = await this.jwtService.verifyAsync(
+      getBearerToken(authorization),
+    )
+
+    const user = await this.userRepository.findOneBy({
+      id,
+    })
+
+    if (!user) throw new NotFoundException()
+
+    user.name = name
+
+    await this.userRepository.save(user)
+
+    return generateResponse({
+      name,
+      message: ResponseMessage.UPDATED,
+    })
+  }
 }
